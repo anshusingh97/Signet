@@ -6,9 +6,11 @@
 [LIVE URL — add after deploying, e.g. Vercel/Netlify]
 
 ## Contract Address
-| Network  | Address                          |
-|----------|-----------------------------------|
-| Preprod  | `[CONTRACT ADDRESS — REQUIRED]`    |
+| Network  | Address                                                            |
+|----------|--------------------------------------------------------------------|
+| Preprod  | `5df7d1cab974f0ccff2bb80d7d9b1fe9cd1969a89b986b7a44d1358fb89f63d7` |
+
+🔍 [View on Midnight Explorer](https://preprod.midnight.network/contract/5df7d1cab974f0ccff2bb80d7d9b1fe9cd1969a89b986b7a44d1358fb89f63d7)
 
 ## What This Does
 Signet lets an issuer open a "gate" in front of some resource — a
