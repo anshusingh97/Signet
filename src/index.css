@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #1B1D22;
+}
+
+body {
+  font-family: "IBM Plex Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fine concentric guilloché-style rings, evoking security-document
+   printing, behind the credential card. Pure CSS, no external asset. */
+.guilloche {
+  background-image: repeating-radial-gradient(
+    circle at 50% 15%,
+    rgba(79, 168, 143, 0.08) 0px,
+    rgba(79, 168, 143, 0.08) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+}
+
+/* Holographic-foil shimmer used only on the verified stamp — a single
+   deliberate moment of motion, not a scattered hover effect. */
+@keyframes foil-sweep {
+  0% {
+    background-position: -120% 0;
+  }
+  100% {
+    background-position: 220% 0;
+  }
+}
+
+.foil-stamp {
+  background: linear-gradient(
+    100deg,
+    #4fa88f 0%,
+    #e0bc4c 35%,
+    #6bc2a8 55%,
+    #c9a227 75%,
+    #4fa88f 100%
+  );
+  background-size: 250% 100%;
+  animation: foil-sweep 2.2s ease-in-out 1;
+}
+
+*:focus-visible {
+  outline: 2px solid #4fa88f;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
