@@ -38,7 +38,7 @@ export type OnChainResult =
 export async function callPresentCredentialOnChain(
   secret: string,
   tier: number,
-  walletApi: { coinPublicKey: string; provider?: any }
+  walletApi: { coinPublicKey: string; provider?: unknown }
 ): Promise<OnChainResult> {
   try {
     // Dynamically import heavy Midnight SDK — not bundled until needed
@@ -83,17 +83,29 @@ export async function callPresentCredentialOnChain(
 
     const zkConfigProvider = new NodeZkConfigProvider(zkConfigPath);
 
+    interface InjectedMidnight {
+      midnight?: Record<string, { getProvingProvider?: () => unknown }>;
+    }
+    const win = window as unknown as InjectedMidnight;
+
     // Use the active wallet provider (1AM Wallet, Lace, or injected)
     const activeProvider =
       walletApi.provider ||
-      (window as any).midnight?.["1am"] ||
-      (window as any).midnight?.oneam ||
-      (window as any).midnight?.mnLace;
+      win.midnight?.["1am"] ||
+      win.midnight?.oneam ||
+      win.midnight?.mnLace;
 
-    const proofProvider =
-      typeof activeProvider?.getProvingProvider === "function"
-        ? activeProvider.getProvingProvider()
-        : httpClientProofProvider(proofServer, zkConfigProvider);
+    const provingFn =
+      typeof activeProvider === "object" &&
+      activeProvider !== null &&
+      "getProvingProvider" in activeProvider &&
+      typeof (activeProvider as { getProvingProvider?: unknown }).getProvingProvider === "function"
+        ? (activeProvider as { getProvingProvider: () => unknown }).getProvingProvider()
+        : null;
+
+    const proofProvider = provingFn || httpClientProofProvider(proofServer, zkConfigProvider);
+
+    type DeployedContractProviders = Parameters<typeof deployedContract>[0];
 
     const providers = {
       privateStateProvider: levelPrivateStateProvider({
@@ -105,8 +117,8 @@ export async function callPresentCredentialOnChain(
       publicDataProvider: indexerPublicDataProvider(indexerHttp, indexerWs),
       zkConfigProvider,
       proofProvider,
-      walletProvider: activeProvider as any,
-      midnightProvider: activeProvider as any,
+      walletProvider: activeProvider as unknown as DeployedContractProviders["walletProvider"],
+      midnightProvider: activeProvider as unknown as DeployedContractProviders["midnightProvider"],
     };
 
     // Connect to the already-deployed contract

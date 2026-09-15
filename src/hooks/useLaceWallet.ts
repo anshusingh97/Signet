@@ -2,12 +2,32 @@ import { useCallback, useEffect, useState } from "react";
 
 export type WalletId = "1am" | "lace" | string;
 
+export interface InjectedConnectionResult {
+  coinPublicKey?: string;
+  address?: string;
+  state?: { address?: string };
+  getPublicKeys?: () => Promise<{ coinPublicKey?: string }>;
+  [key: string]: unknown;
+}
+
+export interface InjectedWalletProvider {
+  name?: string;
+  icon?: string;
+  apiVersion?: string;
+  enable?: () => Promise<InjectedConnectionResult>;
+  connect?: (networkId?: string) => Promise<InjectedConnectionResult>;
+  isEnabled?: () => Promise<boolean>;
+  isConnected?: () => Promise<boolean>;
+  getProvingProvider?: () => unknown;
+  [key: string]: unknown;
+}
+
 export interface DiscoveredWallet {
   id: WalletId;
   name: string;
   icon?: string;
   installed: boolean;
-  provider?: any;
+  provider?: InjectedWalletProvider;
 }
 
 export type WalletStatus =
@@ -22,7 +42,7 @@ export interface WalletApi {
   address?: string;
   walletId: string;
   walletName: string;
-  provider: any;
+  provider: InjectedWalletProvider | InjectedConnectionResult;
 }
 
 export interface WalletState {
@@ -46,7 +66,9 @@ const STORAGE_WALLET_ID = "signet_wallet_id";
 export function discoverMidnightWallets(): DiscoveredWallet[] {
   if (typeof window === "undefined") return [];
 
-  const midnight = (window as any).midnight;
+  const midnight = (window as unknown as {
+    midnight?: Record<string, InjectedWalletProvider>;
+  }).midnight;
   const discovered: DiscoveredWallet[] = [];
 
   // Check for 1AM Wallet
@@ -150,12 +172,12 @@ export function useLaceWallet(): WalletState {
 
   // Connect helper given a wallet provider
   const doConnectWithProvider = useCallback(
-    async (provider: any, walletId: WalletId, walletName: string) => {
+    async (provider: InjectedWalletProvider, walletId: WalletId, walletName: string) => {
       setStatus("connecting");
       setError(null);
 
       try {
-        let connResult: any = null;
+        let connResult: InjectedConnectionResult | null = null;
 
         // Support both connect('preprod') and enable()
         if (typeof provider.connect === "function") {
@@ -171,11 +193,17 @@ export function useLaceWallet(): WalletState {
         }
 
         // Extract coinPublicKey and address from connection result
+        let resolvedCpk: string | null = null;
+        if (typeof connResult?.getPublicKeys === "function") {
+          const keys = await connResult.getPublicKeys();
+          resolvedCpk = keys?.coinPublicKey ?? null;
+        }
+
         const cpk =
           connResult?.coinPublicKey ||
           connResult?.address ||
           connResult?.state?.address ||
-          (typeof connResult?.getPublicKeys === "function" ? (await connResult.getPublicKeys())?.coinPublicKey : null) ||
+          resolvedCpk ||
           "midnight-wallet-user";
 
         const addr = connResult?.address || cpk;
