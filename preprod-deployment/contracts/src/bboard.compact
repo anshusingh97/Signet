@@ -49,9 +49,9 @@ export circuit openGate(
   minTier: Uint<8>,
   root: MerkleTreeDigest
 ): [] {
-  resourceName = name;
-  requiredTier = minTier;
-  issuerRoot = root;
+  resourceName = disclose(name);
+  requiredTier = disclose(minTier);
+  issuerRoot = disclose(root);
   gateOpen = true;
 }
 
@@ -80,8 +80,8 @@ export circuit presentCredential(): [] {
   assert(computedRoot == issuerRoot, "credential was not issued by the trusted issuer");
 
   const nullifier = persistentHash<Bytes<32>>(secret);
-  assert(!usedNullifiers.member(nullifier), "credential already presented at this gate");
-  usedNullifiers.insert(nullifier);
+  assert(!usedNullifiers.member(disclose(nullifier)), "credential already presented at this gate");
+  usedNullifiers.insert(disclose(nullifier));
 
   verifiedCount.increment(1);
 }
