@@ -105,9 +105,7 @@ export async function callPresentCredentialOnChain(
 
     const proofProvider = provingFn || httpClientProofProvider(proofServer, zkConfigProvider);
 
-    type DeployedContractProviders = Parameters<typeof deployedContract>[0];
-
-    const providers = {
+    const providers: Record<string, unknown> = {
       privateStateProvider: levelPrivateStateProvider({
         privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
         signingKeyStoreName: `signet-signing-${walletApi.coinPublicKey.slice(0, 8)}`,
@@ -117,8 +115,8 @@ export async function callPresentCredentialOnChain(
       publicDataProvider: indexerPublicDataProvider(indexerHttp, indexerWs),
       zkConfigProvider,
       proofProvider,
-      walletProvider: activeProvider as unknown as DeployedContractProviders["walletProvider"],
-      midnightProvider: activeProvider as unknown as DeployedContractProviders["midnightProvider"],
+      walletProvider: activeProvider,
+      midnightProvider: activeProvider,
     };
 
     // Connect to the already-deployed contract
