@@ -75,7 +75,8 @@ export circuit presentCredential(): [] {
   const leaf = persistentHash<Vector<2, Bytes<32>>>(
     [secret, persistentHash<Uint<8>>(tier)]
   );
-  const computedRoot = merkleTreePathRoot<10, Bytes<32>>(path, leaf);
+  assert(path.leaf == leaf, "credential leaf mismatch");
+  const computedRoot = merkleTreePathRoot<10, Bytes<32>>(path);
   assert(computedRoot == issuerRoot, "credential was not issued by the trusted issuer");
 
   const nullifier = persistentHash<Vector<2, Bytes<32>>>(
