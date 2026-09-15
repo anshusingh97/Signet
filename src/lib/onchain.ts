@@ -50,12 +50,12 @@ export async function callPresentCredentialOnChain(
       { deployedContract, callTx },
       { CompiledBBoardContractContract },
     ] = await Promise.all([
-      import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
-      import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
-      import("@midnight-ntwrk/midnight-js-level-private-state-provider"),
-      import("@midnight-ntwrk/midnight-js-node-zk-config-provider"),
-      import("@midnight-ntwrk/midnight-js-contracts"),
-      import("@midnight-ntwrk/bboard-contract"),
+      import(/* @vite-ignore */ "@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
+      import(/* @vite-ignore */ "@midnight-ntwrk/midnight-js-http-client-proof-provider"),
+      import(/* @vite-ignore */ "@midnight-ntwrk/midnight-js-level-private-state-provider"),
+      import(/* @vite-ignore */ "@midnight-ntwrk/midnight-js-node-zk-config-provider"),
+      import(/* @vite-ignore */ "@midnight-ntwrk/midnight-js-contracts"),
+      import(/* @vite-ignore */ "@midnight-ntwrk/bboard-contract"),
     ]);
 
     // Preprod network endpoints
