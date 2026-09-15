@@ -24,7 +24,7 @@ import CompactStandardLibrary;
 
 export ledger resourceName: Opaque<"string">;
 export ledger requiredTier: Uint<8>;
-export ledger issuerRoot: Bytes<32>;      // Merkle root of issued credential leaves
+export ledger issuerRoot: MerkleTreeDigest;      // Merkle root of issued credential leaves
 export ledger usedNullifiers: Set<Bytes<32>>;
 export ledger verifiedCount: Counter;
 export ledger gateOpen: Boolean;
@@ -47,7 +47,7 @@ witness credentialPath(): MerkleTreePath<10, Bytes<32>>;
 export circuit openGate(
   name: Opaque<"string">,
   minTier: Uint<8>,
-  root: Bytes<32>
+  root: MerkleTreeDigest
 ): [] {
   resourceName = name;
   requiredTier = minTier;
