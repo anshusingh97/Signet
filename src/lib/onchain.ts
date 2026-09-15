@@ -38,7 +38,7 @@ export type OnChainResult =
 export async function callPresentCredentialOnChain(
   secret: string,
   tier: number,
-  walletApi: { coinPublicKey: string }
+  walletApi: { coinPublicKey: string; provider?: any }
 ): Promise<OnChainResult> {
   try {
     // Dynamically import heavy Midnight SDK — not bundled until needed
@@ -83,6 +83,18 @@ export async function callPresentCredentialOnChain(
 
     const zkConfigProvider = new NodeZkConfigProvider(zkConfigPath);
 
+    // Use the active wallet provider (1AM Wallet, Lace, or injected)
+    const activeProvider =
+      walletApi.provider ||
+      (window as any).midnight?.["1am"] ||
+      (window as any).midnight?.oneam ||
+      (window as any).midnight?.mnLace;
+
+    const proofProvider =
+      typeof activeProvider?.getProvingProvider === "function"
+        ? activeProvider.getProvingProvider()
+        : httpClientProofProvider(proofServer, zkConfigProvider);
+
     const providers = {
       privateStateProvider: levelPrivateStateProvider({
         privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
@@ -92,10 +104,9 @@ export async function callPresentCredentialOnChain(
       }),
       publicDataProvider: indexerPublicDataProvider(indexerHttp, indexerWs),
       zkConfigProvider,
-      proofProvider: httpClientProofProvider(proofServer, zkConfigProvider),
-      // Lace wallet acts as the wallet + midnight provider via window.midnight
-      walletProvider: window.midnight!.mnLace as any,
-      midnightProvider: window.midnight!.mnLace as any,
+      proofProvider,
+      walletProvider: activeProvider as any,
+      midnightProvider: activeProvider as any,
     };
 
     // Connect to the already-deployed contract

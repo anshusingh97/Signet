@@ -21,7 +21,7 @@ export function CredentialCard({
 }: {
   gate: GateState;
   onVerified: () => void;
-  walletApi: { coinPublicKey: string } | null;
+  walletApi: { coinPublicKey: string; provider?: any; walletName?: string } | null;
   walletStatus: string;
 }) {
   const [secret, setSecret] = useState<string | null>(null);

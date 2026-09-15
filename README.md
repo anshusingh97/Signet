@@ -48,7 +48,7 @@ place.
 - **Contract:** Compact (`contracts/credential.compact`) — Midnight's ZK
   smart contract language
 - **Frontend:** React + TypeScript + Vite + Tailwind CSS
-- **Wallet:** Lace (Midnight/Preprod connector)
+- **Wallet:** 1AM Wallet or Lace (Midnight Preprod connector)
 - **Tests:** Vitest, mirroring the circuit's logic in TypeScript
 - **CI/CD:** GitHub Actions
 
@@ -57,7 +57,7 @@ place.
 - npm
 - [Midnight `compact` CLI](https://docs.midnight.network) (for compiling
   the contract and deploying to Preprod)
-- [Lace wallet](https://docs.midnight.network) browser extension, funded
+- [1AM Wallet](https://1am.xyz) or [Lace wallet](https://docs.midnight.network) browser extension, funded
   on Preprod, for live on-chain interaction
 
 ## Setup & Run Locally

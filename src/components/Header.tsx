@@ -9,12 +9,14 @@ function truncate(addr: string) {
 export function Header({
   status,
   address,
+  walletName,
   error,
   onConnect,
   onDisconnect,
 }: {
   status: WalletStatus;
   address: string | null;
+  walletName?: string | null;
   error: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
@@ -41,6 +43,12 @@ export function Header({
           {status === "connected" && address ? (
             <>
               <div className="flex items-center gap-2">
+                {/* Wallet badge */}
+                {walletName && (
+                  <span className="font-mono text-[10px] bg-paper/10 text-paper/70 px-1.5 py-0.5 rounded border border-paper/15">
+                    {walletName}
+                  </span>
+                )}
                 {/* Green dot indicator */}
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-verdigris-light animate-pulse" />
                 <span className="font-mono text-xs text-verdigris-light">
@@ -76,7 +84,7 @@ export function Header({
                   connecting…
                 </span>
               ) : (
-                "connect lace wallet"
+                "connect wallet"
               )}
             </button>
           )}

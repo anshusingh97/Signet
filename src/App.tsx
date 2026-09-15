@@ -3,7 +3,7 @@ import { Header } from "./components/Header";
 import { CredentialCard } from "./components/CredentialCard";
 import { VerificationLedger } from "./components/VerificationLedger";
 import { PrivacyLedger } from "./components/PrivacyLedger";
-import { useLaceWallet } from "./hooks/useLaceWallet";
+import { useLaceWallet, WalletId } from "./hooks/useLaceWallet";
 import { openGate } from "./lib/credentialSimulator";
 import { WalletConnectModal } from "./components/WalletConnectModal";
 import { explorerContractUrl } from "./lib/onchain";
@@ -17,21 +17,23 @@ function App() {
   const [, forceRender] = useState(0);
   const [showModal, setShowModal] = useState(false);
 
-  async function handleConnectRequest() {
+  function handleConnectRequest() {
+    wallet.refreshAvailableWallets();
     setShowModal(true);
   }
 
-  async function handleModalConfirm() {
+  async function handleSelectWallet(walletId: WalletId) {
     setShowModal(false);
-    await wallet.connect();
+    await wallet.connect(walletId);
   }
 
   return (
     <div className="min-h-screen bg-graphite flex flex-col">
-      {/* Wallet Connect Modal */}
+      {/* Wallet Connect Modal with 1AM and Lace support */}
       {showModal && (
         <WalletConnectModal
-          onConfirm={handleModalConfirm}
+          wallets={wallet.availableWallets}
+          onSelectWallet={handleSelectWallet}
           onCancel={() => setShowModal(false)}
         />
       )}
@@ -39,6 +41,7 @@ function App() {
       <Header
         status={wallet.status}
         address={wallet.address}
+        walletName={wallet.connectedWalletName}
         error={wallet.error}
         onConnect={handleConnectRequest}
         onDisconnect={wallet.disconnect}
