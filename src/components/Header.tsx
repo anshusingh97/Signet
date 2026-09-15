@@ -1,7 +1,9 @@
 import { WalletStatus } from "../hooks/useLaceWallet";
+import { explorerContractUrl } from "../lib/onchain";
 
 function truncate(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+  if (addr.length <= 16) return addr;
+  return `${addr.slice(0, 8)}…${addr.slice(-6)}`;
 }
 
 export function Header({
@@ -37,26 +39,51 @@ export function Header({
 
         <div className="flex flex-col items-end gap-1">
           {status === "connected" && address ? (
-            <button
-              onClick={onDisconnect}
-              className="font-mono text-xs text-verdigris-light border border-verdigris/40 rounded px-3 py-1.5 hover:bg-verdigris/10 transition-colors"
-            >
-              {truncate(address)} · disconnect
-            </button>
+            <>
+              <div className="flex items-center gap-2">
+                {/* Green dot indicator */}
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-verdigris-light animate-pulse" />
+                <span className="font-mono text-xs text-verdigris-light">
+                  {truncate(address)}
+                </span>
+                <button
+                  onClick={onDisconnect}
+                  className="font-mono text-[10px] text-paper/40 border border-paper/15 rounded px-2 py-1 hover:border-paper/30 hover:text-paper/60 transition-colors"
+                  title="Disconnect wallet"
+                >
+                  disconnect
+                </button>
+              </div>
+              <a
+                href={explorerContractUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[10px] text-paper/35 hover:text-verdigris-light transition-colors"
+              >
+                ↗ view contract on-chain
+              </a>
+            </>
           ) : (
             <button
               onClick={onConnect}
               disabled={status === "connecting"}
+              id="connect-wallet-btn"
               className="font-mono text-xs text-paper border border-paper/25 rounded px-3 py-1.5 hover:border-brass hover:text-brass-light transition-colors disabled:opacity-50"
             >
-              {status === "connecting" ? "connecting…" : "connect lace wallet"}
+              {status === "connecting" ? (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-paper/30 border-t-paper animate-spin" />
+                  connecting…
+                </span>
+              ) : (
+                "connect lace wallet"
+              )}
             </button>
           )}
-          {status === "unavailable" && (
-            <p className="text-[11px] text-paper/40 max-w-[220px] text-right">{error}</p>
-          )}
-          {status === "error" && error && (
-            <p className="text-[11px] text-brass-light max-w-[220px] text-right">{error}</p>
+          {(status === "unavailable" || status === "error") && error && (
+            <p className="text-[11px] text-brass-light max-w-[260px] text-right mt-1">
+              {error}
+            </p>
           )}
         </div>
       </div>
