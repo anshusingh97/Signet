@@ -120,7 +120,9 @@ export async function callPresentCredentialOnChain(
     };
 
     // Clear corrupted private state from IndexedDB to ensure fresh witnesses are used
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (providers.privateStateProvider as any).setContractAddress(CONTRACT_ADDRESS);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (providers.privateStateProvider as any).clear();
 
     // Connect to the already-deployed contract
