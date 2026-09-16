@@ -64,7 +64,7 @@ export async function callPresentCredentialOnChain(
     const indexerWs =
       "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
     const proofServer = "https://proof-server.preprod.midnight.network";
-    const zkConfigPath = "./managed/bboard";
+    const zkConfigPath = `${window.location.origin}/managed/bboard`;
 
     // Build private state for this credential holder
     const secretBytes = hexToBytes(secret.padStart(64, "0").slice(0, 64));
