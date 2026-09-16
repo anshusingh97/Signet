@@ -128,6 +128,7 @@ export async function callPresentCredentialOnChain(
     });
 
     // Call the presentCredential circuit — Lace pops up for signature
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tx = await (contract as any).callTx.presentCredential();
     const txId: string = tx.txId ?? tx.hash ?? tx.id ?? JSON.stringify(tx).slice(0, 64);
 
