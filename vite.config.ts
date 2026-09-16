@@ -14,6 +14,11 @@ export default defineConfig({
         __dirname,
         "preprod-deployment/contracts/src/index.ts"
       ),
+      // Browser polyfills for Node.js built-ins used by abstract-level /
+      // levelPrivateStateProvider. Without these, abstract-level crashes with
+      // "Class extends value undefined" because EventEmitter is undefined.
+      "events": "events",
+      "assert": "assert",
     },
   },
   build: {
