@@ -8,9 +8,9 @@
 ## Contract Address
 | Network  | Address                                                            |
 |----------|--------------------------------------------------------------------|
-| Preprod  | `5df7d1cab974f0ccff2bb80d7d9b1fe9cd1969a89b986b7a44d1358fb89f63d7` |
+| Preprod  | `d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e` |
 
-🔍 [View on Midnight Explorer](https://www.midnightexplorer.com/contract/5df7d1cab974f0ccff2bb80d7d9b1fe9cd1969a89b986b7a44d1358fb89f63d7)
+🔍 [View on Midnight Explorer](https://www.midnightexplorer.com/contract/d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e?network=preprod)
 
 ## What This Does
 Signet lets an issuer open a "gate" in front of some resource — a
