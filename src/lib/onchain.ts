@@ -1,6 +1,6 @@
 // Midnight Preprod deployed contract address
 export const CONTRACT_ADDRESS =
-  "5df7d1cab974f0ccff2bb80d7d9b1fe9cd1969a89b986b7a44d1358fb89f63d7";
+  "d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e";
 
 export const EXPLORER_BASE = "https://www.midnightexplorer.com";
 
