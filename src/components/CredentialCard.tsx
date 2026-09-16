@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { GateState, issueCredential, presentCredential } from "../lib/credentialSimulator";
 import { callPresentCredentialOnChain, explorerTxUrl, explorerContractUrl, OnChainResult } from "../lib/onchain";
+
+export interface GateState {
+  resourceName: string;
+  requiredTier: number;
+  verifiedCount: number;
+  usedNullifiers: Set<string>;
+  gateOpen: boolean;
+}
 
 type Phase = "unissued" | "ready" | "proving" | "awaiting_signature" | "done" | "error";
 
@@ -20,7 +27,7 @@ export function CredentialCard({
   walletStatus,
 }: {
   gate: GateState;
-  onVerified: () => void;
+  onVerified: (nullifier?: string) => void;
   walletApi: { coinPublicKey: string; provider?: unknown; walletName?: string } | null;
   walletStatus: string;
 }) {
@@ -33,8 +40,10 @@ export function CredentialCard({
 
   async function handleIssue() {
     const s = randomSecret();
+    // We no longer call the mock issuer. Just proceed to ready state.
+    // In a real app, this would be an actual credential issuance from a provider.
     setSecret(s);
-    await issueCredential(gate, s, tier);
+    setIssuedTier(tier);
     setIssuedTier(tier);
     setPhase("ready");
   }
@@ -43,46 +52,20 @@ export function CredentialCard({
     if (!secret || issuedTier === null) return;
     setErrorMsg(null);
 
-    if (walletApi) {
-      // ── REAL ON-CHAIN PATH ────────────────────────────────────────────
-      setPhase("awaiting_signature");
-      const result = await callPresentCredentialOnChain(secret, issuedTier, walletApi);
-      if (result.ok) {
-        // Also update local sim state so counts stay consistent
-        await presentCredential(gate, secret, issuedTier);
-        setTxResult(result);
-        setPhase("done");
-        onVerified();
-      } else {
-        // Fall back to simulator if SDK not available (no bboard-contract pkg)
-        if (
-          result.error.includes("Cannot find module") ||
-          result.error.includes("Failed to fetch") ||
-          result.error.includes("dynamic import")
-        ) {
-          await runSimulatorFallback();
-        } else {
-          setErrorMsg(result.error);
-          setPhase("error");
-        }
-      }
-    } else {
-      // ── SIMULATOR PATH (no wallet connected) ─────────────────────────
-      await runSimulatorFallback();
+    if (!walletApi) {
+      setErrorMsg("Please connect your wallet to present a credential on-chain.");
+      setPhase("error");
+      return;
     }
-  }
 
-  async function runSimulatorFallback() {
-    if (!secret || issuedTier === null) return;
-    setPhase("proving");
-    await new Promise((r) => setTimeout(r, 900));
-    const result = await presentCredential(gate, secret, issuedTier);
+    setPhase("awaiting_signature");
+    const result = await callPresentCredentialOnChain(secret, issuedTier, walletApi);
     if (result.ok) {
-      setTxResult({ ok: false, error: "" }); // No real tx in sim
+      setTxResult(result);
       setPhase("done");
-      onVerified();
+      onVerified(result.nullifier);
     } else {
-      setErrorMsg(result.error ?? "Credential could not be verified.");
+      setErrorMsg(result.error);
       setPhase("error");
     }
   }
@@ -118,8 +101,7 @@ export function CredentialCard({
           <div className="mb-5 px-3 py-2 bg-brass/8 border border-brass/25 rounded-sm flex items-center gap-2">
             <span className="text-brass-light text-lg">⚠</span>
             <p className="text-xs text-brass-light/80 leading-relaxed">
-              Connect your Lace wallet to submit real on-chain proofs. Without a wallet, 
-              the simulator mirrors the circuit logic locally.
+              Connect your 1AM wallet to submit real on-chain proofs.
             </p>
           </div>
         )}
@@ -198,21 +180,12 @@ export function CredentialCard({
               </div>
             )}
 
-            {/* Simulator receipt (no wallet) */}
             {(!txResult || !txResult.ok) && (
               <div className="border border-paper/12 rounded-sm p-4 bg-graphite/40 space-y-1">
-                <p className="text-[11px] text-paper/45">your private receipt</p>
+                <p className="text-[11px] text-paper/45">error</p>
                 <p className="font-mono text-xs text-paper/50 break-all">
-                  {txResult?.error === "" ? "(simulator mode — connect wallet for on-chain proof)" : "verified locally"}
+                  Transaction failed.
                 </p>
-                <a
-                  href={explorerContractUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-mono text-[10px] text-paper/40 hover:text-verdigris-light transition-colors"
-                >
-                  ↗ view gate contract on Midnight Explorer
-                </a>
               </div>
             )}
           </div>
@@ -234,7 +207,7 @@ export function CredentialCard({
                     Waiting for wallet signature…
                   </p>
                   <p className="text-xs text-paper/50 mt-0.5">
-                    Check your Lace wallet popup to approve the transaction.
+                    Check your wallet popup to approve the transaction.
                   </p>
                 </div>
               </div>
@@ -271,7 +244,7 @@ export function CredentialCard({
 
             {walletConnected && phase === "ready" && (
               <p className="text-[11px] text-paper/35 text-center">
-                Your Lace wallet will open for signature approval.
+                Your wallet will open for signature approval.
               </p>
             )}
           </div>

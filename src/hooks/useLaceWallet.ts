@@ -249,15 +249,10 @@ export function useLaceWallet(): WalletState {
 
       const provider = target.provider;
       try {
-        const isConn = provider.isConnected
-          ? await provider.isConnected()
-          : provider.isEnabled
-          ? await provider.isEnabled()
-          : false;
-
-        if (isConn) {
-          await doConnectWithProvider(provider, target.id, target.name);
-        }
+        // Extensions often require enable() to be called to wake up on page load,
+        // so we call doConnectWithProvider directly to restore the session.
+        // If the user hasn't revoked permission, this resolves silently.
+        await doConnectWithProvider(provider, target.id, target.name);
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }

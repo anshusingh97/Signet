@@ -4,7 +4,7 @@ import { CredentialCard } from "./components/CredentialCard";
 import { VerificationLedger } from "./components/VerificationLedger";
 import { PrivacyLedger } from "./components/PrivacyLedger";
 import { useLaceWallet, WalletId } from "./hooks/useLaceWallet";
-import { openGate } from "./lib/credentialSimulator";
+import { useLaceWallet, WalletId } from "./hooks/useLaceWallet";
 import { WalletConnectModal } from "./components/WalletConnectModal";
 import { explorerContractUrl } from "./lib/onchain";
 
@@ -13,9 +13,18 @@ const REQUIRED_TIER = 3;
 
 function App() {
   const wallet = useLaceWallet();
-  const gate = useMemo(() => openGate(RESOURCE_NAME, REQUIRED_TIER), []);
+  const [verifiedCount, setVerifiedCount] = useState(0);
+  const [usedNullifiers, setUsedNullifiers] = useState<Set<string>>(new Set());
   const [, forceRender] = useState(0);
   const [showModal, setShowModal] = useState(false);
+
+  const gateState = {
+    resourceName: RESOURCE_NAME,
+    requiredTier: REQUIRED_TIER,
+    verifiedCount,
+    usedNullifiers,
+    gateOpen: true,
+  };
 
   function handleConnectRequest() {
     wallet.refreshAvailableWallets();
@@ -72,15 +81,25 @@ function App() {
 
         <section className="mb-10">
           <CredentialCard
-            gate={gate}
-            onVerified={() => forceRender((n) => n + 1)}
+            gate={gateState}
+            onVerified={(nullifier) => {
+              setVerifiedCount(c => c + 1);
+              if (nullifier) {
+                setUsedNullifiers(prev => {
+                  const next = new Set(prev);
+                  next.add(nullifier);
+                  return next;
+                });
+              }
+              forceRender((n) => n + 1);
+            }}
             walletApi={wallet.api}
             walletStatus={wallet.status}
           />
         </section>
 
         <section className="grid gap-6 sm:grid-cols-2">
-          <VerificationLedger gate={gate} />
+          <VerificationLedger gate={gateState} />
           <PrivacyLedger />
         </section>
       </main>

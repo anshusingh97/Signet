@@ -1,4 +1,4 @@
-import { GateState } from "../lib/credentialSimulator";
+import { GateState } from "./CredentialCard";
 
 export function VerificationLedger({ gate }: { gate: GateState }) {
   return (
