@@ -10,7 +10,7 @@
 |----------|--------------------------------------------------------------------|
 | Preprod  | `d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e` |
 
-🔍 [View on Midnight Explorer](https://www.midnightexplorer.com/contract/d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e?network=preprod)
+🔍 [View on Midnight Explorer](https://preprod.midnightexplorer.com/contracts/0xd1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e)
 
 ## What This Does
 Signet lets an issuer open a "gate" in front of some resource — a

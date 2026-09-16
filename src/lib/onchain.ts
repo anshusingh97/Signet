@@ -2,14 +2,14 @@
 export const CONTRACT_ADDRESS =
   "d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e";
 
-export const EXPLORER_BASE = "https://www.midnightexplorer.com";
+export const EXPLORER_BASE = "https://preprod.midnightexplorer.com";
 
 export function explorerTxUrl(txId: string) {
-  return `${EXPLORER_BASE}/tx/${txId}`;
+  return `${EXPLORER_BASE}/transactions/0x${txId}`;
 }
 
 export function explorerContractUrl() {
-  return `${EXPLORER_BASE}/contract/${CONTRACT_ADDRESS}`;
+  return `${EXPLORER_BASE}/contracts/0x${CONTRACT_ADDRESS}`;
 }
 
 // -----------------------------------------------------------------------
