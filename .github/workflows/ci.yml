@@ -31,8 +31,9 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$HOME/.compact/bin:$PATH"
           compact update 0.31.1 || compact update 0.31.0 || compact update
-          cd preprod-deployment/contracts
+          cd preprod-deployment
           npm install
+          cd contracts
           compact compile src/bboard.compact ./src/managed/bboard
           npm run build
 
