@@ -128,7 +128,7 @@ export async function callPresentCredentialOnChain(
     });
 
     // Call the presentCredential circuit — Lace pops up for signature
-    const tx = await contract.callTx.presentCredential();
+    const tx = await (contract as any).callTx.presentCredential();
     const txId: string = tx.txId ?? tx.hash ?? tx.id ?? JSON.stringify(tx).slice(0, 64);
 
     // Nullifier = hash of secret (mirrors circuit)
