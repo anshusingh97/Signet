@@ -120,6 +120,7 @@ export async function callPresentCredentialOnChain(
     };
 
     // Clear corrupted private state from IndexedDB to ensure fresh witnesses are used
+    (providers.privateStateProvider as any).setContractAddress(CONTRACT_ADDRESS);
     await (providers.privateStateProvider as any).clear();
 
     // Connect to the already-deployed contract
