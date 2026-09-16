@@ -105,25 +105,39 @@ export async function callPresentCredentialOnChain(
 
     const proofProvider = provingFn || httpClientProofProvider(proofServer, zkConfigProvider);
 
+    const basePrivateStateProvider = levelPrivateStateProvider({
+      privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
+      signingKeyStoreName: `signet-signing-${walletApi.coinPublicKey.slice(0, 8)}`,
+      privateStoragePasswordProvider: () => "TempPassword123!Secure",
+      accountId: walletApi.coinPublicKey,
+    });
+
+    // We must use an in-memory provider for private state because witnesses are functions.
+    // IndexedDB (used by levelPrivateStateProvider) strips out functions when serializing,
+    // which corrupts the witnesses and causes "first (witnesses) argument to Contract constructor is not an object".
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inMemoryState = new Map<string, any>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const privateStateProvider: any = new Proxy(basePrivateStateProvider as object, {
+      get(target, prop) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (prop === 'set') return async (id: string, state: any) => { inMemoryState.set(id, state); };
+        if (prop === 'get') return async (id: string) => inMemoryState.get(id) || null;
+        if (prop === 'clear') return async () => { inMemoryState.clear(); };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const value = (target as any)[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      }
+    });
+
     const providers: Record<string, unknown> = {
-      privateStateProvider: levelPrivateStateProvider({
-        privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
-        signingKeyStoreName: `signet-signing-${walletApi.coinPublicKey.slice(0, 8)}`,
-        privateStoragePasswordProvider: () => "TempPassword123!Secure",
-        accountId: walletApi.coinPublicKey,
-      }),
+      privateStateProvider,
       publicDataProvider: indexerPublicDataProvider(indexerHttp, indexerWs),
       zkConfigProvider,
       proofProvider,
       walletProvider: activeProvider,
       midnightProvider: activeProvider,
     };
-
-    // Clear corrupted private state from IndexedDB to ensure fresh witnesses are used
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (providers.privateStateProvider as any).setContractAddress(CONTRACT_ADDRESS);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (providers.privateStateProvider as any).clear();
 
     // Connect to the already-deployed contract
     const contract = await findDeployedContract(providers, {
