@@ -128,9 +128,9 @@ export async function callPresentCredentialOnChain(
     });
 
     // Call the presentCredential circuit — Lace pops up for signature
+    const tx = await contract.callTx.presentCredential();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tx = await (contract as any).callTx.presentCredential();
-    const txId: string = tx.txId ?? tx.hash ?? tx.id ?? JSON.stringify(tx).slice(0, 64);
+    const txId: string = String((tx as any).txId ?? (tx as any).hash ?? (tx as any).id ?? JSON.stringify(tx).slice(0, 64));
 
     // Nullifier = hash of secret (mirrors circuit)
     const nullifier = await sha256hex(secret);

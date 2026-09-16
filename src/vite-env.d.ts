@@ -19,17 +19,13 @@ declare module "@midnight-ntwrk/midnight-js-node-zk-config-provider" {
 }
 
 declare module "@midnight-ntwrk/midnight-js-contracts" {
-  export function deployedContract(
+  export function findDeployedContract(
     providers: Record<string, unknown>,
     options: Record<string, unknown>
   ): Promise<{
-    presentCredential: () => Promise<Record<string, unknown>>;
-    [key: string]: unknown;
-  }>;
-  export function callTx(circuit: unknown): () => Promise<{
-    txId?: string;
-    hash?: string;
-    id?: string;
+    callTx: {
+      presentCredential: () => Promise<Record<string, unknown>>;
+    };
     [key: string]: unknown;
   }>;
 }
