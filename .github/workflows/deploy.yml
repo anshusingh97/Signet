@@ -73,3 +73,13 @@ jobs:
           path: |
             preprod-deployment/cli/deployment.json
             deployed_contract.json
+
+      - name: Commit Compiled Contract to Repo
+        run: |
+          git config --global user.name "anshusingh97"
+          git config --global user.email "anshusingh97@users.noreply.github.com"
+          git add preprod-deployment/contracts/dist preprod-deployment/contracts/src/managed deployed_contract.json
+          git commit -m "Auto-compile and update contract bindings" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
