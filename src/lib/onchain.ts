@@ -124,7 +124,7 @@ export async function callPresentCredentialOnChain(
       contractAddress: CONTRACT_ADDRESS,
       compiledContract: BboardContract,
       privateStateId: walletApi.coinPublicKey,
-      initialPrivateState: { witnesses },
+      initialPrivateState: witnesses,
     });
 
     // Call the presentCredential circuit — Lace pops up for signature
