@@ -48,14 +48,14 @@ export async function callPresentCredentialOnChain(
       { levelPrivateStateProvider },
       { FetchZkConfigProvider },
       { findDeployedContract },
-      { Contract: BboardContract },
+      { CompiledBBoardContractContract: BboardContract },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
       import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
       import("@midnight-ntwrk/midnight-js-level-private-state-provider"),
       import("@midnight-ntwrk/midnight-js-fetch-zk-config-provider"),
       import("@midnight-ntwrk/midnight-js-contracts"),
-      import("./managed-contract"),
+      import("@midnight-ntwrk/bboard-contract"),
     ]);
 
     // Preprod network endpoints
