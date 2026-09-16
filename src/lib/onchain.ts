@@ -46,14 +46,14 @@ export async function callPresentCredentialOnChain(
       { indexerPublicDataProvider },
       { httpClientProofProvider },
       { levelPrivateStateProvider },
-      { NodeZkConfigProvider },
+      { FetchZkConfigProvider },
       { deployedContract, callTx },
       { CompiledBBoardContractContract },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
       import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
       import("@midnight-ntwrk/midnight-js-level-private-state-provider"),
-      import("@midnight-ntwrk/midnight-js-node-zk-config-provider"),
+      import("@midnight-ntwrk/midnight-js-fetch-zk-config-provider"),
       import("@midnight-ntwrk/midnight-js-contracts"),
       import("@midnight-ntwrk/bboard-contract"),
     ]);
@@ -81,7 +81,7 @@ export async function callPresentCredentialOnChain(
       }),
     };
 
-    const zkConfigProvider = new NodeZkConfigProvider(zkConfigPath);
+    const zkConfigProvider = new FetchZkConfigProvider(zkConfigPath, fetch.bind(window));
 
     interface InjectedMidnight {
       midnight?: Record<string, { getProvingProvider?: () => unknown }>;
