@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Header } from "./components/Header";
 import { CredentialCard } from "./components/CredentialCard";
 import { VerificationLedger } from "./components/VerificationLedger";
 import { PrivacyLedger } from "./components/PrivacyLedger";
-import { useLaceWallet, WalletId } from "./hooks/useLaceWallet";
 import { useLaceWallet, WalletId } from "./hooks/useLaceWallet";
 import { WalletConnectModal } from "./components/WalletConnectModal";
 import { explorerContractUrl } from "./lib/onchain";

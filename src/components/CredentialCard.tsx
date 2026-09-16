@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { callPresentCredentialOnChain, explorerTxUrl, explorerContractUrl, OnChainResult } from "../lib/onchain";
+import { callPresentCredentialOnChain, explorerTxUrl, OnChainResult } from "../lib/onchain";
 
 export interface GateState {
   resourceName: string;
