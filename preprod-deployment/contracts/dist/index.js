@@ -15,9 +15,9 @@
 import { CompiledContract } from "@midnight-ntwrk/midnight-js-protocol/compact-js";
 export * from "./managed/bboard/contract/index.js";
 export * from "./witnesses";
-import * as CompiledBBoardContract from "./managed/bboard/contract/index.js";
+import { Contract } from "./managed/bboard/contract/index.js";
 import * as Witnesses from "./witnesses";
-class ContractWrapper extends CompiledBBoardContract.Contract {
+class ContractWrapper extends Contract {
     constructor() {
         super(Witnesses.witnesses);
     }
