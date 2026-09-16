@@ -47,7 +47,7 @@ export async function callPresentCredentialOnChain(
       { httpClientProofProvider },
       { levelPrivateStateProvider },
       { FetchZkConfigProvider },
-      { deployedContract, callTx },
+      { deployedContract },
       { Contract: BboardContract },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
@@ -128,7 +128,7 @@ export async function callPresentCredentialOnChain(
     });
 
     // Call the presentCredential circuit — Lace pops up for signature
-    const tx = await callTx(contract.presentCredential)();
+    const tx = await contract.callTx.presentCredential();
     const txId: string = tx.txId ?? tx.hash ?? tx.id ?? JSON.stringify(tx).slice(0, 64);
 
     // Nullifier = hash of secret (mirrors circuit)
