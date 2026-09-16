@@ -119,6 +119,9 @@ export async function callPresentCredentialOnChain(
       midnightProvider: activeProvider,
     };
 
+    // Clear corrupted private state from IndexedDB to ensure fresh witnesses are used
+    await (providers.privateStateProvider as any).clear();
+
     // Connect to the already-deployed contract
     const contract = await findDeployedContract(providers, {
       contractAddress: CONTRACT_ADDRESS,
