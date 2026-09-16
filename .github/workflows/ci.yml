@@ -41,7 +41,7 @@ jobs:
         run: |
           git config --global user.name "anshusingh97"
           git config --global user.email "anshusingh97@users.noreply.github.com"
-          git add preprod-deployment/contracts/dist preprod-deployment/contracts/src/managed
+          git add -f preprod-deployment/contracts/dist preprod-deployment/contracts/src/managed
           git commit -m "Auto-compile and update contract bindings" || echo "No changes to commit"
           git push
         env:
