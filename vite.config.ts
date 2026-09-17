@@ -19,6 +19,7 @@ export default defineConfig({
       // "Class extends value undefined" because EventEmitter is undefined.
       "events": "events",
       "assert": "assert",
+      "buffer": "buffer",
     },
   },
   build: {

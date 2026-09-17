@@ -1,3 +1,5 @@
+import "../polyfills";
+
 // Midnight Preprod deployed contract address
 export const CONTRACT_ADDRESS =
   "d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e";
