@@ -29,6 +29,16 @@ export type OnChainResult =
   | { ok: true; txId: string; nullifier: string }
   | { ok: false; error: string };
 
+interface WitnessContext<PS> {
+  privateState: PS;
+}
+
+interface TxDataResponse {
+  txId?: string;
+  hash?: string;
+  id?: string;
+}
+
 /**
  * Call the on-chain presentCredential circuit.
  * @param secret  Private credential secret (32-byte hex string, stays local)
@@ -48,15 +58,16 @@ export async function callPresentCredentialOnChain(
       { levelPrivateStateProvider },
       { FetchZkConfigProvider },
       { findDeployedContract },
-      { CompiledBBoardContractContract: BboardContract, Contract },
+      { CompiledContract },
+      { CompiledBBoardContractContract: BboardContract },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
       import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
       import("@midnight-ntwrk/midnight-js-level-private-state-provider"),
       import("@midnight-ntwrk/midnight-js-fetch-zk-config-provider"),
       import("@midnight-ntwrk/midnight-js-contracts"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      import("@midnight-ntwrk/bboard-contract").then((m: any) => ({ CompiledBBoardContractContract: m.CompiledBBoardContractContract, Contract: m.Contract })),
+      import("@midnight-ntwrk/midnight-js-protocol/compact-js"),
+      import("@midnight-ntwrk/bboard-contract"),
     ]);
 
     // Preprod network endpoints
@@ -71,15 +82,26 @@ export async function callPresentCredentialOnChain(
     const secretBytes = hexToBytes(secret.padStart(64, "0").slice(0, 64));
 
     // Witnesses: supply private values to the ZK circuit
+    // Compact witnesses receive WitnessContext<Ledger, PS> and return [PS, Value]
     const witnesses = {
-      credentialSecret: () => secretBytes,
-      credentialTier: () => tier,
-      // MerkleTreePath — for demo we generate a dummy path; replace with
-      // real Merkle proof from the issuer's off-chain tree in production.
-      credentialPath: () => ({
-        leaf: secretBytes, // simplified: real path from issuer
-        path: Array.from({ length: 10 }, () => ({ sibling: { field: BigInt(0) }, goes_left: false })),
-      }),
+      credentialSecret: <PS>(context: WitnessContext<PS>): [PS, Uint8Array] => [
+        context.privateState,
+        secretBytes,
+      ],
+      credentialTier: <PS>(context: WitnessContext<PS>): [PS, bigint] => [
+        context.privateState,
+        BigInt(tier),
+      ],
+      credentialPath: <PS>(context: WitnessContext<PS>) => [
+        context.privateState,
+        {
+          leaf: secretBytes,
+          path: Array.from({ length: 10 }, () => ({
+            sibling: { field: 0n },
+            goes_left: false,
+          })),
+        },
+      ],
     };
 
     const zkConfigProvider = new FetchZkConfigProvider(zkConfigPath, fetch.bind(window));
@@ -106,29 +128,11 @@ export async function callPresentCredentialOnChain(
 
     const proofProvider = provingFn || httpClientProofProvider(proofServer, zkConfigProvider);
 
-    const basePrivateStateProvider = levelPrivateStateProvider({
+    const privateStateProvider = levelPrivateStateProvider({
       privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
       signingKeyStoreName: `signet-signing-${walletApi.coinPublicKey.slice(0, 8)}`,
       privateStoragePasswordProvider: () => "TempPassword123!Secure",
       accountId: walletApi.coinPublicKey,
-    });
-
-    // We must use an in-memory provider for private state because witnesses are functions.
-    // IndexedDB (used by levelPrivateStateProvider) strips out functions when serializing,
-    // which corrupts the witnesses and causes "first (witnesses) argument to Contract constructor is not an object".
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inMemoryState = new Map<string, any>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const privateStateProvider: any = new Proxy(basePrivateStateProvider as object, {
-      get(target, prop) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (prop === 'set') return async (id: string, state: any) => { inMemoryState.set(id, state); };
-        if (prop === 'get') return async (id: string) => inMemoryState.get(id) || null;
-        if (prop === 'clear') return async () => { inMemoryState.clear(); };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const value = (target as any)[prop];
-        return typeof value === 'function' ? value.bind(target) : value;
-      }
     });
 
     const providers: Record<string, unknown> = {
@@ -140,36 +144,27 @@ export async function callPresentCredentialOnChain(
       midnightProvider: activeProvider,
     };
 
-    class SafeContract extends Contract {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      constructor(witnesses?: any) {
-        super(witnesses || {
-          credentialSecret: () => new Uint8Array(),
-          credentialTier: () => 1n,
-          credentialPath: () => ({}),
-        });
-      }
-    }
-
-    const SafeCompiledContract = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(BboardContract as any),
-      contract: SafeContract
-    };
+    // Attach witnesses directly to the compiled contract using CompiledContract.withWitnesses
+    type CompiledContractTarget = Parameters<typeof findDeployedContract>[1]["compiledContract"];
+    const withWitnessesFn = CompiledContract.withWitnesses as unknown as (
+      w: typeof witnesses
+    ) => (contract: unknown) => CompiledContractTarget;
+    const compiledContract = withWitnessesFn(witnesses)(BboardContract);
 
     // Connect to the already-deployed contract
     const contract = await findDeployedContract(providers, {
       contractAddress: CONTRACT_ADDRESS,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      compiledContract: SafeCompiledContract as any,
+      compiledContract,
       privateStateId: walletApi.coinPublicKey,
-      initialPrivateState: witnesses,
+      initialPrivateState: { secretKey: secretBytes },
     });
 
     // Call the presentCredential circuit — Lace pops up for signature
     const tx = await contract.callTx.presentCredential();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const txId: string = String((tx as any).txId ?? (tx as any).hash ?? (tx as any).id ?? JSON.stringify(tx).slice(0, 64));
+    const txRecord = tx as unknown as TxDataResponse;
+    const txId: string = String(
+      txRecord.txId ?? txRecord.hash ?? txRecord.id ?? JSON.stringify(tx).slice(0, 64)
+    );
 
     // Nullifier = hash of secret (mirrors circuit)
     const nullifier = await sha256hex(secret);

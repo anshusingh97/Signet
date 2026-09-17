@@ -9,12 +9,15 @@ export const createCredentialPrivateState = (secretKey?: Uint8Array) => ({
 export const witnesses: Record<string, any> = new Proxy(
   {
     credentialSecret: ({ privateState }: any) => [privateState, new Uint8Array(32)],
-    credentialTier: ({ privateState }: any) => [privateState, 0],
+    credentialTier: ({ privateState }: any) => [privateState, 0n],
     credentialPath: ({ privateState }: any) => [
       privateState,
       {
-        siblingPath: Array.from({ length: 10 }, () => new Uint8Array(32)),
-        leafIndex: 0,
+        leaf: new Uint8Array(32),
+        path: Array.from({ length: 10 }, () => ({
+          sibling: { field: 0n },
+          goes_left: false,
+        })),
       },
     ],
   },
