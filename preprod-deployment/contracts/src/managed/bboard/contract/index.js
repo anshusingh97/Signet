@@ -129,13 +129,6 @@ const _descriptor_17 = new _ContractAddress_0();
 export class Contract {
   witnesses;
   constructor(...args_0) {
-    if (args_0.length === 0 || args_0[0] === undefined) {
-      args_0 = [{
-        credentialSecret: () => undefined,
-        credentialTier: () => undefined,
-        credentialPath: () => undefined
-      }];
-    }
     if (args_0.length !== 1) {
       throw new __compactRuntime.CompactError(`Contract constructor: expected 1 argument, received ${args_0.length}`);
     }
