@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "cp -r preprod-deployment/contracts/dist node_modules/@midnight-ntwrk/bboard-contract/ || true && tsc -b && vite build --force",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
