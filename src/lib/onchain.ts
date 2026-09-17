@@ -60,6 +60,9 @@ export async function callPresentCredentialOnChain(
       { findDeployedContract },
       { CompiledContract },
       { CompiledBBoardContractContract: BboardContract },
+      { setNetworkId },
+      { Transaction },
+      { toHex, fromHex },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
       import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
@@ -68,7 +71,12 @@ export async function callPresentCredentialOnChain(
       import("@midnight-ntwrk/midnight-js-contracts"),
       import("@midnight-ntwrk/midnight-js-protocol/compact-js"),
       import("@midnight-ntwrk/bboard-contract"),
+      import("@midnight-ntwrk/midnight-js-network-id"),
+      import("@midnight-ntwrk/midnight-js-protocol/ledger"),
+      import("@midnight-ntwrk/midnight-js-utils"),
     ]);
+
+    setNetworkId("preprod");
 
     // Preprod network endpoints
     const indexerHttp =
@@ -135,13 +143,83 @@ export async function callPresentCredentialOnChain(
       accountId: walletApi.coinPublicKey,
     });
 
+    let shieldedCoinPk = walletApi.coinPublicKey;
+    let shieldedEncPk = walletApi.coinPublicKey;
+    const ap = activeProvider as Record<string, unknown> | undefined;
+    if (typeof ap?.getShieldedAddresses === "function") {
+      try {
+        const addresses = await (ap.getShieldedAddresses as () => Promise<{
+          shieldedCoinPublicKey?: string;
+          shieldedEncryptionPublicKey?: string;
+        }>)();
+        if (addresses?.shieldedCoinPublicKey) {
+          shieldedCoinPk = addresses.shieldedCoinPublicKey;
+        }
+        if (addresses?.shieldedEncryptionPublicKey) {
+          shieldedEncPk = addresses.shieldedEncryptionPublicKey;
+        }
+      } catch (err) {
+        console.warn("Could not retrieve shielded addresses:", err);
+      }
+    }
+
+    const walletProvider = {
+      getCoinPublicKey(): string {
+        if (typeof ap?.getCoinPublicKey === "function") {
+          return (ap.getCoinPublicKey as () => string)();
+        }
+        return shieldedCoinPk;
+      },
+      getEncryptionPublicKey(): string {
+        if (typeof ap?.getEncryptionPublicKey === "function") {
+          return (ap.getEncryptionPublicKey as () => string)();
+        }
+        return shieldedEncPk;
+      },
+      balanceTx: async (tx: { serialize: () => Uint8Array }, ttl?: Date) => {
+        if (typeof ap?.balanceUnsealedTransaction === "function") {
+          const serializedTx = toHex(tx.serialize());
+          const received = await (ap.balanceUnsealedTransaction as (s: string) => Promise<{ tx: string }>)(serializedTx);
+          return Transaction.deserialize(
+            "signature",
+            "proof",
+            "binding",
+            fromHex(received.tx)
+          );
+        }
+        if (typeof ap?.balanceTx === "function") {
+          return (ap.balanceTx as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, ttl);
+        }
+        if (typeof ap?.balanceTransaction === "function") {
+          return (ap.balanceTransaction as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, ttl);
+        }
+        throw new Error(
+          "Connected wallet does not support balancing transactions. Please ensure your wallet is on Preprod."
+        );
+      },
+    };
+
+    const midnightProvider = {
+      submitTx: async (tx: { serialize: () => Uint8Array; identifiers: () => string[] }) => {
+        if (typeof ap?.submitTransaction === "function") {
+          await (ap.submitTransaction as (s: string) => Promise<unknown>)(toHex(tx.serialize()));
+          const txIdentifiers = tx.identifiers();
+          return txIdentifiers[0];
+        }
+        if (typeof ap?.submitTx === "function") {
+          return (ap.submitTx as (t: unknown) => Promise<string>)(tx);
+        }
+        throw new Error("Connected wallet does not support submitting transactions.");
+      },
+    };
+
     const providers: Record<string, unknown> = {
       privateStateProvider,
       publicDataProvider: indexerPublicDataProvider(indexerHttp, indexerWs),
       zkConfigProvider,
       proofProvider,
-      walletProvider: activeProvider,
-      midnightProvider: activeProvider,
+      walletProvider,
+      midnightProvider,
     };
 
     // Attach witnesses directly to the compiled contract using CompiledContract.withWitnesses
