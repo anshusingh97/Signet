@@ -55,6 +55,7 @@ export async function callPresentCredentialOnChain(
       import("@midnight-ntwrk/midnight-js-level-private-state-provider"),
       import("@midnight-ntwrk/midnight-js-fetch-zk-config-provider"),
       import("@midnight-ntwrk/midnight-js-contracts"),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       import("@midnight-ntwrk/bboard-contract").then((m: any) => ({ CompiledBBoardContractContract: m.CompiledBBoardContractContract, Contract: m.Contract })),
     ]);
 
@@ -140,6 +141,7 @@ export async function callPresentCredentialOnChain(
     };
 
     class SafeContract extends Contract {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       constructor(witnesses?: any) {
         super(witnesses || {
           credentialSecret: () => new Uint8Array(),
@@ -150,6 +152,7 @@ export async function callPresentCredentialOnChain(
     }
 
     const SafeCompiledContract = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(BboardContract as any),
       contract: SafeContract
     };
@@ -157,6 +160,7 @@ export async function callPresentCredentialOnChain(
     // Connect to the already-deployed contract
     const contract = await findDeployedContract(providers, {
       contractAddress: CONTRACT_ADDRESS,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       compiledContract: SafeCompiledContract as any,
       privateStateId: walletApi.coinPublicKey,
       initialPrivateState: witnesses,
