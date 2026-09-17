@@ -48,14 +48,14 @@ export async function callPresentCredentialOnChain(
       { levelPrivateStateProvider },
       { FetchZkConfigProvider },
       { findDeployedContract },
-      { CompiledBBoardContractContract: BboardContract },
+      { CompiledBBoardContractContract: BboardContract, Contract },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
       import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
       import("@midnight-ntwrk/midnight-js-level-private-state-provider"),
       import("@midnight-ntwrk/midnight-js-fetch-zk-config-provider"),
       import("@midnight-ntwrk/midnight-js-contracts"),
-      import("@midnight-ntwrk/bboard-contract"),
+      import("@midnight-ntwrk/bboard-contract").then((m: any) => ({ CompiledBBoardContractContract: m.CompiledBBoardContractContract, Contract: m.Contract })),
     ]);
 
     // Preprod network endpoints
@@ -139,10 +139,25 @@ export async function callPresentCredentialOnChain(
       midnightProvider: activeProvider,
     };
 
+    class SafeContract extends Contract {
+      constructor(witnesses?: any) {
+        super(witnesses || {
+          credentialSecret: () => new Uint8Array(),
+          credentialTier: () => 1n,
+          credentialPath: () => ({}),
+        });
+      }
+    }
+
+    const SafeCompiledContract = {
+      ...(BboardContract as any),
+      contract: SafeContract
+    };
+
     // Connect to the already-deployed contract
     const contract = await findDeployedContract(providers, {
       contractAddress: CONTRACT_ADDRESS,
-      compiledContract: BboardContract,
+      compiledContract: SafeCompiledContract as any,
       privateStateId: walletApi.coinPublicKey,
       initialPrivateState: witnesses,
     });
