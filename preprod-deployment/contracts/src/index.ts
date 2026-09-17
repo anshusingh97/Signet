@@ -23,6 +23,5 @@ export const CompiledBBoardContractContract = CompiledContract.make(
   "bboard",
   Contract as any
 ).pipe(
-  CompiledContract.withCompiledFileAssets("./managed/bboard"),
-  CompiledContract.withWitnesses(witnesses as any)
+  CompiledContract.withCompiledFileAssets("./managed/bboard")
 ) as any;

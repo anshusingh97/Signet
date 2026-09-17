@@ -14,11 +14,7 @@
 // limitations under the License.
 import { CompiledContract } from "@midnight-ntwrk/midnight-js-protocol/compact-js";
 import { Contract } from "./managed/bboard/contract/index.js";
-import { witnesses } from "./witnesses.js";
 export * from "./managed/bboard/contract/index.js";
 export * from "./witnesses.js";
-export const CompiledBBoardContractContract = CompiledContract.make("bboard", Contract).pipe(
-  CompiledContract.withCompiledFileAssets("./managed/bboard"),
-  CompiledContract.withWitnesses(witnesses)
-);
+export const CompiledBBoardContractContract = CompiledContract.make("bboard", Contract).pipe(CompiledContract.withCompiledFileAssets("./managed/bboard"));
 //# sourceMappingURL=index.js.map
