@@ -1,5 +1,8 @@
 name: Deploy to Preprod
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -52,6 +55,14 @@ jobs:
           sudo swapon /swapfile_extra
           free -h
 
+      - name: Cache Wallet State
+        uses: actions/cache@v4
+        with:
+          path: |
+            preprod-deployment/cli/bboard-private-state
+            preprod-deployment/cli/bboard-private-state-signing-keys
+          key: wallet-state-${{ runner.os }}-preprod
+          
       - name: Deploy Contract
         run: |
           cd preprod-deployment/cli
