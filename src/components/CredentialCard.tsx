@@ -66,8 +66,8 @@ export function CredentialCard({
       onVerified(result.nullifier);
     } else {
       let friendlyError = result.error;
-      if (result.error.includes("temporarily banned")) {
-        friendlyError = "The previous transaction is still being processed in the Midnight mempool. Wait ~30-60 seconds or generate a fresh credential before submitting.";
+      if (result.error.includes("temporarily banned") || result.error.includes("104")) {
+        friendlyError = "The previous transaction is still settling in the block on Preprod. Please wait ~30-45 seconds for the block to be minted, then issue a fresh credential and submit.";
       }
       setErrorMsg(friendlyError);
       setPhase("error");
