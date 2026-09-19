@@ -5,15 +5,15 @@ export const CONTRACT_ADDRESS =
   "d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c";
 
 
-export const EXPLORER_BASE = "https://preprod.midnightexplorer.com";
-
 export function explorerTxUrl(txId: string) {
-  return `${EXPLORER_BASE}/transactions/0x${txId}`;
+  const cleanId = txId.replace(/^0x/, "");
+  return `https://explorer.1am.xyz/tx/${cleanId}?network=preprod`;
 }
 
 export function explorerContractUrl() {
-  return `${EXPLORER_BASE}/contracts/0x${CONTRACT_ADDRESS}`;
+  return `https://preprod.midnight.network/contract/${CONTRACT_ADDRESS}`;
 }
+
 
 // -----------------------------------------------------------------------
 // On-chain interaction via Midnight.js contract bindings
@@ -36,11 +36,6 @@ interface WitnessContext<PS> {
   privateState: PS;
 }
 
-interface TxDataResponse {
-  txId?: string;
-  hash?: string;
-  id?: string;
-}
 
 /**
  * Call the on-chain presentCredential circuit.
@@ -269,12 +264,26 @@ export async function callPresentCredentialOnChain(
       initialPrivateState: { secretKey: secretBytes },
     });
 
-    // Call the presentCredential circuit — Lace pops up for signature
+    // Call the presentCredential circuit — wallet pops up for signature
     const tx = await contract.callTx.presentCredential();
-    const txRecord = tx as unknown as TxDataResponse;
-    const txId: string = String(
-      txRecord.txId ?? txRecord.hash ?? txRecord.id ?? JSON.stringify(tx).slice(0, 64)
-    );
+    const rawTx = tx as Record<string, unknown>;
+    const publicData = (rawTx?.public as Record<string, unknown>) || rawTx;
+    
+    let txId = "";
+    if (typeof publicData?.txId === "string") {
+      txId = publicData.txId;
+    } else if (typeof publicData?.txHash === "string") {
+      txId = publicData.txHash;
+    } else if (Array.isArray(publicData?.identifiers) && publicData.identifiers.length > 0) {
+      txId = String(publicData.identifiers[0]);
+    } else if (typeof rawTx?.txId === "string") {
+      txId = rawTx.txId;
+    } else if (typeof rawTx?.hash === "string") {
+      txId = rawTx.hash;
+    } else {
+      // Safe fallback serialization avoiding BigInt TypeError
+      txId = JSON.stringify(tx, (_, v) => (typeof v === "bigint" ? v.toString() : v)).slice(0, 64);
+    }
 
     // Nullifier = hash of secret (mirrors circuit)
     const nullifier = await sha256hex(secret);
@@ -283,6 +292,7 @@ export async function callPresentCredentialOnChain(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, error: msg };
+
   }
 }
 
