@@ -65,7 +65,11 @@ export function CredentialCard({
       setPhase("done");
       onVerified(result.nullifier);
     } else {
-      setErrorMsg(result.error);
+      let friendlyError = result.error;
+      if (result.error.includes("temporarily banned")) {
+        friendlyError = "The previous transaction is still being processed in the Midnight mempool. Wait ~30-60 seconds or generate a fresh credential before submitting.";
+      }
+      setErrorMsg(friendlyError);
       setPhase("error");
     }
   }
@@ -214,9 +218,21 @@ export function CredentialCard({
             )}
 
             {errorMsg && (
-              <p className="text-sm text-brass-light border border-brass/30 bg-brass/5 rounded-sm px-3 py-2">
-                {errorMsg}
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-brass-light border border-brass/30 bg-brass/5 rounded-sm px-3 py-2">
+                  {errorMsg}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg(null);
+                    setPhase("unissued");
+                  }}
+                  className="text-xs font-mono text-paper/60 hover:text-paper underline block text-center w-full py-1"
+                >
+                  ← choose tier / issue fresh credential
+                </button>
+              </div>
             )}
 
             <button
