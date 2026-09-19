@@ -226,15 +226,20 @@ export async function callPresentCredentialOnChain(
       },
     };
 
+    let submittedTxId: string | null = null;
+
     const midnightProvider = {
       submitTx: async (tx: { serialize: () => Uint8Array; identifiers: () => string[] }) => {
         if (typeof ap?.submitTransaction === "function") {
           await (ap.submitTransaction as (s: string) => Promise<unknown>)(toHex(tx.serialize()));
           const txIdentifiers = tx.identifiers();
+          submittedTxId = txIdentifiers[0];
           return txIdentifiers[0];
         }
         if (typeof ap?.submitTx === "function") {
-          return (ap.submitTx as (t: unknown) => Promise<string>)(tx);
+          const res = await (ap.submitTx as (t: unknown) => Promise<string>)(tx);
+          submittedTxId = res;
+          return res;
         }
         throw new Error("Connected wallet does not support submitting transactions.");
       },
@@ -264,25 +269,38 @@ export async function callPresentCredentialOnChain(
       initialPrivateState: { secretKey: secretBytes },
     });
 
-    // Call the presentCredential circuit — wallet pops up for signature
-    const tx = await contract.callTx.presentCredential();
-    const rawTx = tx as Record<string, unknown>;
-    const publicData = (rawTx?.public as Record<string, unknown>) || rawTx;
-    
-    let txId = "";
-    if (typeof publicData?.txId === "string") {
-      txId = publicData.txId;
-    } else if (typeof publicData?.txHash === "string") {
-      txId = publicData.txHash;
-    } else if (Array.isArray(publicData?.identifiers) && publicData.identifiers.length > 0) {
-      txId = String(publicData.identifiers[0]);
-    } else if (typeof rawTx?.txId === "string") {
-      txId = rawTx.txId;
-    } else if (typeof rawTx?.hash === "string") {
-      txId = rawTx.hash;
-    } else {
-      // Safe fallback serialization avoiding BigInt TypeError
-      txId = JSON.stringify(tx, (_, v) => (typeof v === "bigint" ? v.toString() : v)).slice(0, 64);
+    // Call the presentCredential circuit — wallet pops up for signature.
+    // Under the hood, contract.callTx.presentCredential() submits via midnightProvider.submitTx
+    // and then blocks awaiting indexer confirmation (watchForTxData), which may take several minutes.
+    // We race it so that as soon as the wallet signs and submits (submittedTxId is set), we proceed!
+    const callPromise = contract.callTx.presentCredential();
+    const earlyReturnPromise = new Promise<{ early: true }>((resolve) => {
+      const check = setInterval(() => {
+        if (submittedTxId) {
+          clearInterval(check);
+          // Allow 2 seconds for any immediate indexer response, then resolve early
+          setTimeout(() => resolve({ early: true }), 2000);
+        }
+      }, 500);
+    });
+
+    const txResult = await Promise.race([callPromise, earlyReturnPromise]);
+
+    let txId = submittedTxId || "";
+    if (txResult && !("early" in txResult)) {
+      const rawTx = txResult as Record<string, unknown>;
+      const publicData = (rawTx?.public as Record<string, unknown>) || rawTx;
+      if (typeof publicData?.txId === "string") {
+        txId = publicData.txId;
+      } else if (typeof publicData?.txHash === "string") {
+        txId = publicData.txHash;
+      } else if (Array.isArray(publicData?.identifiers) && publicData.identifiers.length > 0) {
+        txId = String(publicData.identifiers[0]);
+      } else if (typeof rawTx?.txId === "string") {
+        txId = rawTx.txId;
+      } else if (typeof rawTx?.hash === "string") {
+        txId = rawTx.hash;
+      }
     }
 
     // Nullifier = hash of secret (mirrors circuit)
