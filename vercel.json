@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/proof/:path*",
+      "destination": "/api/proof"
+    }
+  ]
+}

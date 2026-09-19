@@ -89,7 +89,10 @@ export async function callPresentCredentialOnChain(
       "https://indexer.preprod.midnight.network/api/v4/graphql";
     const indexerWs =
       "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
-    const proofServer = "https://proof-server.preprod.midnight.network";
+    const proofServer =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/api/proof`
+        : "https://proof-server.preprod.midnight.network";
     const zkConfigPath = `${window.location.origin}/managed/bboard`;
 
     // Build private state for this credential holder
@@ -140,14 +143,17 @@ export async function callPresentCredentialOnChain(
         ? (activeProvider as { getProvingProvider: () => unknown }).getProvingProvider()
         : null;
 
-    let proofProvider: any;
-    if (provingFn && typeof (provingFn as any).proveTx === "function") {
-      proofProvider = provingFn;
-    } else if (provingFn && typeof (provingFn as any).prove === "function") {
-      proofProvider = createProofProvider(provingFn as any);
+    type UnknownRecord = Record<string, unknown>;
+    const pFn = provingFn as UnknownRecord | null;
+    let proofProvider: unknown;
+    if (pFn && typeof pFn.proveTx === "function") {
+      proofProvider = pFn;
+    } else if (pFn && typeof pFn.prove === "function") {
+      proofProvider = (createProofProvider as unknown as (p: unknown) => unknown)(pFn);
     } else {
       proofProvider = httpClientProofProvider(proofServer, zkConfigProvider);
     }
+
 
     const privateStateProvider = levelPrivateStateProvider({
       privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
