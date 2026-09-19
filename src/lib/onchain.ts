@@ -128,12 +128,28 @@ export async function callPresentCredentialOnChain(
     }
     const win = window as unknown as InjectedMidnight;
 
-    // Use the active wallet provider (1AM Wallet, Lace, or injected)
+    // Determine proving provider:
+    // 1. Check if wallet provides an in-wallet proving provider (1AM / Lace)
+    // 2. Check if wallet provides its configured proverServerUri
+    // 3. Fallback to public / local proof server
     const activeProvider =
       walletApi.provider ||
       win.midnight?.["1am"] ||
       win.midnight?.oneam ||
       win.midnight?.mnLace;
+
+    let walletProofServerUri: string | null = null;
+    const apAny = activeProvider as Record<string, unknown> | undefined;
+    if (typeof apAny?.getConfiguration === "function") {
+      try {
+        const conf = await (apAny.getConfiguration as () => Promise<{ proverServerUri?: string }> )();
+        if (conf?.proverServerUri) {
+          walletProofServerUri = conf.proverServerUri;
+        }
+      } catch (err) {
+        console.warn("Could not read wallet getConfiguration:", err);
+      }
+    }
 
     const provingFn =
       typeof activeProvider === "object" &&
@@ -146,13 +162,16 @@ export async function callPresentCredentialOnChain(
     type UnknownRecord = Record<string, unknown>;
     const pFn = provingFn as UnknownRecord | null;
     let proofProvider: unknown;
+
     if (pFn && typeof pFn.proveTx === "function") {
       proofProvider = pFn;
     } else if (pFn && typeof pFn.prove === "function") {
       proofProvider = (createProofProvider as unknown as (p: unknown) => unknown)(pFn);
     } else {
-      proofProvider = httpClientProofProvider(proofServer, zkConfigProvider);
+      const targetProofServer = walletProofServerUri || proofServer;
+      proofProvider = httpClientProofProvider(targetProofServer, zkConfigProvider);
     }
+
 
 
     const privateStateProvider = levelPrivateStateProvider({
