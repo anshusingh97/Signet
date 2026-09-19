@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/polyfills.ts","./src/vite-env.d.ts","./src/components/credentialcard.tsx","./src/components/header.tsx","./src/components/privacyledger.tsx","./src/components/verificationledger.tsx","./src/components/walletconnectmodal.tsx","./src/hooks/uselacewallet.ts","./src/lib/managed-contract.ts","./src/lib/onchain.ts"],"version":"5.9.3"}

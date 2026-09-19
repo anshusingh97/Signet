@@ -167,15 +167,9 @@ export async function callPresentCredentialOnChain(
 
     const walletProvider = {
       getCoinPublicKey(): string {
-        if (typeof ap?.getCoinPublicKey === "function") {
-          return (ap.getCoinPublicKey as () => string)();
-        }
         return shieldedCoinPk;
       },
       getEncryptionPublicKey(): string {
-        if (typeof ap?.getEncryptionPublicKey === "function") {
-          return (ap.getEncryptionPublicKey as () => string)();
-        }
         return shieldedEncPk;
       },
       balanceTx: async (tx: { serialize: () => Uint8Array }, ttl?: Date) => {
