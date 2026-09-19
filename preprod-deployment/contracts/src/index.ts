@@ -20,11 +20,12 @@ import { witnesses } from "./witnesses.js";
 export * from "./managed/bboard/contract/index.js";
 export * from "./witnesses.js";
 
-export const CompiledBBoardContractContract = CompiledContract.make(
+export const CompiledBBoardContractContract = (CompiledContract.make as any)(
   "bboard",
   Contract as any
 ).pipe(
-  CompiledContract.withCompiledFileAssets("./managed/bboard"),
-  CompiledContract.withWitnesses(witnesses)
+  (CompiledContract.withCompiledFileAssets as any)("./managed/bboard"),
+  (CompiledContract.withWitnesses as any)(witnesses as any)
 ) as any;
+
 
