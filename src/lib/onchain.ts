@@ -66,6 +66,7 @@ export async function callPresentCredentialOnChain(
       { setNetworkId },
       { Transaction },
       { toHex, fromHex },
+      { createProofProvider },
     ] = await Promise.all([
       import("@midnight-ntwrk/midnight-js-indexer-public-data-provider"),
       import("@midnight-ntwrk/midnight-js-http-client-proof-provider"),
@@ -77,7 +78,9 @@ export async function callPresentCredentialOnChain(
       import("@midnight-ntwrk/midnight-js-network-id"),
       import("@midnight-ntwrk/midnight-js-protocol/ledger"),
       import("@midnight-ntwrk/midnight-js-utils"),
+      import("@midnight-ntwrk/midnight-js-types"),
     ]);
+
 
     setNetworkId("preprod");
 
@@ -137,7 +140,14 @@ export async function callPresentCredentialOnChain(
         ? (activeProvider as { getProvingProvider: () => unknown }).getProvingProvider()
         : null;
 
-    const proofProvider = provingFn || httpClientProofProvider(proofServer, zkConfigProvider);
+    let proofProvider: any;
+    if (provingFn && typeof (provingFn as any).proveTx === "function") {
+      proofProvider = provingFn;
+    } else if (provingFn && typeof (provingFn as any).prove === "function") {
+      proofProvider = createProofProvider(provingFn as any);
+    } else {
+      proofProvider = httpClientProofProvider(proofServer, zkConfigProvider);
+    }
 
     const privateStateProvider = levelPrivateStateProvider({
       privateStateStoreName: `signet-private-state-${walletApi.coinPublicKey.slice(0, 8)}`,
