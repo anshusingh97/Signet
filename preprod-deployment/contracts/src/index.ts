@@ -15,6 +15,7 @@
 
 import { CompiledContract } from "@midnight-ntwrk/midnight-js-protocol/compact-js";
 import { Contract } from "./managed/bboard/contract/index.js";
+import { witnesses } from "./witnesses.js";
 
 export * from "./managed/bboard/contract/index.js";
 export * from "./witnesses.js";
@@ -23,5 +24,7 @@ export const CompiledBBoardContractContract = CompiledContract.make(
   "bboard",
   Contract as any
 ).pipe(
-  CompiledContract.withCompiledFileAssets("./managed/bboard")
+  CompiledContract.withCompiledFileAssets("./managed/bboard"),
+  CompiledContract.withWitnesses(witnesses)
 ) as any;
+

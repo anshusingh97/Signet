@@ -10,7 +10,8 @@ import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-p
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { deployContract } from '@midnight-ntwrk/midnight-js-contracts';
-import { CompiledBBoardContractContract } from '@midnight-ntwrk/bboard-contract';
+import { CompiledBBoardContractContract, witnesses } from '@midnight-ntwrk/bboard-contract';
+import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { createLogger } from '../logger-utils.js';
 import { getUnshieldedAddress } from '../wallet-utils.js';
 import { generateDust } from '../generate-dust.js';
@@ -142,8 +143,9 @@ async function main() {
   console.log("Deploying contract...");
   let success = false;
   try {
+    const contractWithWitnesses = CompiledContract.withWitnesses(witnesses)(CompiledBBoardContractContract);
     const deployed = await deployContract(providers, {
-        compiledContract: CompiledBBoardContractContract,
+        compiledContract: contractWithWitnesses as any,
         args: []
     });
     
