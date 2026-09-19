@@ -265,7 +265,7 @@ export async function callPresentCredentialOnChain(
     const contract = await findDeployedContract(providers, {
       contractAddress: CONTRACT_ADDRESS,
       compiledContract,
-      privateStateId: walletApi.coinPublicKey,
+      privateStateId: `signet-${secret.slice(0, 16)}`,
       initialPrivateState: { secretKey: secretBytes },
     });
 

@@ -14,7 +14,7 @@ type Phase = "unissued" | "ready" | "proving" | "awaiting_signature" | "done" | 
 const TIERS = [1, 2, 3, 4, 5];
 
 function randomSecret() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
