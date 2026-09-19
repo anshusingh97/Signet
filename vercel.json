@@ -2,7 +2,8 @@
   "rewrites": [
     {
       "source": "/api/proof/:path*",
-      "destination": "/api/proof"
+      "destination": "https://proof-server.preprod.midnight.network/:path*"
     }
   ]
 }
+
