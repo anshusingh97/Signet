@@ -2,7 +2,8 @@ import "../polyfills";
 
 // Midnight Preprod deployed contract address
 export const CONTRACT_ADDRESS =
-  "d1c1d7dfbe122a6ea84d005aff15855da00269f05f1c69a4a8e63b35cdd8ba8e";
+  "d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c";
+
 
 export const EXPLORER_BASE = "https://preprod.midnightexplorer.com";
 

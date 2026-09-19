@@ -86,6 +86,8 @@ jobs:
           git config --global user.email "anshusingh97@users.noreply.github.com"
           git add -f preprod-deployment/contracts/dist preprod-deployment/contracts/src/managed deployed_contract.json
           git commit -m "Auto-compile and update contract bindings" || echo "No changes to commit"
-          git push
+          git pull --rebase origin main || true
+          git push || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
