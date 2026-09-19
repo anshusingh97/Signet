@@ -230,11 +230,13 @@ export async function callPresentCredentialOnChain(
 
     const midnightProvider = {
       submitTx: async (tx: { serialize: () => Uint8Array; identifiers: () => string[] }) => {
+        const txHex = toHex(tx.serialize());
         if (typeof ap?.submitTransaction === "function") {
-          await (ap.submitTransaction as (s: string) => Promise<unknown>)(toHex(tx.serialize()));
+          const res = await (ap.submitTransaction as (s: string) => Promise<unknown>)(txHex);
           const txIdentifiers = tx.identifiers();
-          submittedTxId = txIdentifiers[0];
-          return txIdentifiers[0];
+          const returnedId = typeof res === "string" ? res : (res as { txId?: string; hash?: string })?.txId || (res as { txId?: string; hash?: string })?.hash;
+          submittedTxId = returnedId || txIdentifiers[0];
+          return submittedTxId;
         }
         if (typeof ap?.submitTx === "function") {
           const res = await (ap.submitTx as (t: unknown) => Promise<string>)(tx);
