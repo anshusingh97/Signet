@@ -10,7 +10,7 @@ https://signet-one-blush.vercel.app
 |----------|----------------------------------|
 | Preprod  | `d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c` |
 
-🔍 [View on Midnight Explorer](https://preprod.midnight.network/contract/d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c)
+🔍 [View on Midnight Explorer](https://preprod.midnightexplorer.com/contracts/0xd6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c)
 
 ## What This Does
 Signet lets an organization or issuer open a "gate" in front of a restricted resource—such as a developer channel, a grant distribution pool, an exclusive voting round, or an accredited community.
