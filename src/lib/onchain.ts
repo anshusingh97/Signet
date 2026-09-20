@@ -1,4 +1,5 @@
 import "../polyfills";
+import { blake2b } from "@noble/hashes/blake2.js";
 
 // Midnight Preprod deployed contract address
 export const CONTRACT_ADDRESS =
@@ -264,15 +265,25 @@ export async function callPresentCredentialOnChain(
 
     const midnightProvider = {
       submitTx: async (tx: { serialize: () => Uint8Array; identifiers: () => string[] }) => {
-        const txHex = toHex(tx.serialize());
-        console.log("Submitting transaction to wallet, length:", txHex.length);
+        const txBytes = tx.serialize();
+        const txHex = toHex(txBytes);
+        // Compute the Substrate extrinsic hash (Blake2b-256) which 1AM Explorer indexes
+        const computedExtrinsicHash = toHex(blake2b(txBytes, { dkLen: 32 }));
+        console.log("Submitting transaction to wallet, length:", txHex.length, "computedExtrinsicHash:", computedExtrinsicHash);
         if (typeof ap?.submitTransaction === "function") {
           try {
             const res = await (ap.submitTransaction as (s: string) => Promise<unknown>)(txHex);
             console.log("1AM submitTransaction response:", res);
-            const txIdentifiers = tx.identifiers();
-            const returnedId = typeof res === "string" ? res : (res as { txId?: string; hash?: string })?.txId || (res as { txId?: string; hash?: string })?.hash;
-            submittedTxId = returnedId || txIdentifiers[0];
+            let returnedId: string | null = null;
+            if (typeof res === "string" && res.length > 0) {
+              returnedId = res.replace(/^0x/, "");
+            } else if (typeof res === "object" && res !== null) {
+              const r = res as Record<string, unknown>;
+              const candidate = (r.txHash || r.hash || r.transactionHash || r.txId || r.id) as string | undefined;
+              if (candidate) returnedId = candidate.replace(/^0x/, "");
+            }
+            // Always prefer the on-chain extrinsic hash over internal identifiers
+            submittedTxId = returnedId || computedExtrinsicHash;
             return submittedTxId;
           } catch (submitErr) {
             console.error("1AM submitTransaction failed with:", submitErr);
@@ -283,8 +294,8 @@ export async function callPresentCredentialOnChain(
           try {
             const res = await (ap.submitTx as (t: unknown) => Promise<string>)(tx);
             console.log("1AM submitTx response:", res);
-            submittedTxId = res;
-            return res;
+            submittedTxId = typeof res === "string" ? res.replace(/^0x/, "") : computedExtrinsicHash;
+            return submittedTxId;
           } catch (submitErr) {
             console.error("1AM submitTx failed with:", submitErr);
             throw submitErr;
@@ -335,20 +346,17 @@ export async function callPresentCredentialOnChain(
 
     const txResult = await Promise.race([callPromise, earlyReturnPromise]);
 
+    // Keep the on-chain extrinsic hash (submittedTxId) as primary! Only fallback if empty.
     let txId = submittedTxId || "";
-    if (txResult && !("early" in txResult)) {
+    if (!txId && txResult && !("early" in txResult)) {
       const rawTx = txResult as Record<string, unknown>;
       const publicData = (rawTx?.public as Record<string, unknown>) || rawTx;
-      if (typeof publicData?.txId === "string") {
-        txId = publicData.txId;
-      } else if (typeof publicData?.txHash === "string") {
-        txId = publicData.txHash;
+      if (typeof publicData?.txHash === "string") {
+        txId = publicData.txHash.replace(/^0x/, "");
+      } else if (typeof publicData?.txId === "string") {
+        txId = publicData.txId.replace(/^0x/, "");
       } else if (Array.isArray(publicData?.identifiers) && publicData.identifiers.length > 0) {
-        txId = String(publicData.identifiers[0]);
-      } else if (typeof rawTx?.txId === "string") {
-        txId = rawTx.txId;
-      } else if (typeof rawTx?.hash === "string") {
-        txId = rawTx.hash;
+        txId = String(publicData.identifiers[0]).replace(/^0x/, "");
       }
     }
 
