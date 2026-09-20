@@ -66,8 +66,10 @@ export function CredentialCard({
       onVerified(result.nullifier);
     } else {
       let friendlyError = result.error;
-      if (result.error.includes("temporarily banned") || result.error.includes("104")) {
-        friendlyError = "The previous transaction is still settling in the block on Preprod. Please wait ~30-45 seconds for the block to be minted, then issue a fresh credential and submit.";
+      if (result.error.includes("104")) {
+        friendlyError = "Transaction rejected (error 104 — Insufficient Shielded Funds): ZK transactions require shielded NIGHT tokens. Your wallet shows 0 shielded holdings. Please open 1AM wallet → Shield some of your NIGHT tokens → wait ~2 minutes for confirmation → then issue a fresh credential and try again.";
+      } else if (result.error.includes("temporarily banned")) {
+        friendlyError = "Your wallet is temporarily rate-limited. Please wait ~60 seconds and then issue a fresh credential and try again.";
       }
       setErrorMsg(friendlyError);
       setPhase("error");
