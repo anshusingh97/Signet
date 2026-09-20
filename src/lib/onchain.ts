@@ -84,45 +84,16 @@ export async function callPresentCredentialOnChain(
       "https://indexer.preprod.midnight.network/api/v4/graphql";
     const indexerWs =
       "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
-    const proofServer =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/api/proof`
-        : "https://proof-server.preprod.midnight.network";
     const zkConfigPath = `${window.location.origin}/managed/bboard`;
 
     // Build private state for this credential holder
     const secretBytes = hexToBytes(secret.padStart(64, "0").slice(0, 64));
 
-    // The circuit computes: leaf = persistentHash([secret, persistentHash(tier)])
-    // The credentialPath witness must supply a leaf field that matches this.
-    // We pre-compute it here using the same compact-runtime hash so the
-    // ZK verifier's internal consistency check passes even with the dummy path.
-    const tierBytes = new Uint8Array(1);
-    tierBytes[0] = tier & 0xff;
-
-    // Import compact-runtime hashing to compute the exact same leaf the circuit does.
-    // Fall back to zeroed leaf if unavailable — the merkle root checks are commented out
-    // in the circuit, so only the leaf consistency check within the witness matters.
-    let leafBytes: Uint8Array = secretBytes;
-    try {
-      const { persistentHash } = await import("@midnight-ntwrk/compact-runtime");
-      // persistentHash<Uint<8>>(tier) — matches _persistentHash_1 in compiled JS
-      const tierHash = persistentHash({ alignment: () => [1], toValue: (v: unknown) => [Number(v) & 0xff] }, BigInt(tier)) as Uint8Array;
-      // persistentHash<Vector<2, Bytes<32>>>([secret, tierHash]) — matches _persistentHash_0
-      const leafVal = persistentHash(
-        { alignment: () => Array(64).fill(1), toValue: (v: unknown) => [...(v as [Uint8Array, Uint8Array]).flatMap(a => [...a])] },
-        [secretBytes, tierHash]
-      ) as Uint8Array;
-      if (leafVal instanceof Uint8Array && leafVal.length === 32) {
-        leafBytes = leafVal;
-      }
-    } catch (_hashErr) {
-      // compact-runtime not available client-side; use secretBytes as leaf fallback.
-      // Since merkle checks are commented out in the circuit, this is safe for demo.
-    }
-
-    // Witnesses: supply private values to the ZK circuit
-    // Compact witnesses receive WitnessContext<Ledger, PS> and return [PS, Value]
+    // Witnesses: supply private values to the ZK circuit.
+    // Compact witnesses receive WitnessContext<Ledger, PS> and return [PS, Value].
+    // Note: the merkle tree root assertions are commented out in bboard.compact, so
+    // the leaf and path values here are not checked on-chain — only the nullifier
+    // uniqueness and tier >= requiredTier assertions matter.
     const witnesses = {
       credentialSecret: <PS>(context: WitnessContext<PS>): [PS, Uint8Array] => [
         context.privateState,
@@ -135,7 +106,7 @@ export async function callPresentCredentialOnChain(
       credentialPath: <PS>(context: WitnessContext<PS>) => [
         context.privateState,
         {
-          leaf: leafBytes,
+          leaf: secretBytes,
           path: Array.from({ length: 10 }, () => ({
             sibling: { field: 0n },
             goes_left: false,
