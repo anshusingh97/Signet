@@ -49,7 +49,13 @@ export function CredentialCard({
   }
 
   async function handlePresent() {
-    if (!secret || issuedTier === null) return;
+    let currentSecret = secret;
+    // If retrying from an error, auto-generate a fresh secret so we don't collision with mempool/nullifier
+    if (phase === "error" || !currentSecret) {
+      currentSecret = randomSecret();
+      setSecret(currentSecret);
+    }
+    if (issuedTier === null) return;
     setErrorMsg(null);
 
     if (!walletApi) {
@@ -59,7 +65,7 @@ export function CredentialCard({
     }
 
     setPhase("awaiting_signature");
-    const result = await callPresentCredentialOnChain(secret, issuedTier, walletApi);
+    const result = await callPresentCredentialOnChain(currentSecret, issuedTier, walletApi);
     if (result.ok) {
       setTxResult(result);
       setPhase("done");
@@ -67,9 +73,11 @@ export function CredentialCard({
     } else {
       let friendlyError = result.error;
       if (result.error.includes("182")) {
-        friendlyError = "ZK proof rejected (error 182 — no shielded NIGHT): Midnight ZK transactions require shielded tokens as inputs. Your Shielded Holdings are 0. In 1AM wallet: click SEND → paste your own shielded address (mn_shield-addr_preprod1…) as destination → send 500 NIGHT → wait ~3 min for confirmation. Then come back and issue a fresh credential.";
+        friendlyError = "Transaction rejected by node (Error 182). A fresh credential secret has been generated. Please wait ~30 seconds for your DUST to mature and try again.";
+        setSecret(randomSecret());
       } else if (result.error.includes("temporarily banned")) {
-        friendlyError = "Your wallet is temporarily rate-limited. Please wait ~60 seconds and then issue a fresh credential and try again.";
+        friendlyError = "Your wallet is temporarily rate-limited. Please wait ~60 seconds and try again.";
+        setSecret(randomSecret());
       }
       setErrorMsg(friendlyError);
       setPhase("error");
