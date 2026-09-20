@@ -344,20 +344,36 @@ export async function callPresentCredentialOnChain(
       }, 500);
     });
 
-    const txResult = await Promise.race([callPromise, earlyReturnPromise]);
+    await Promise.race([callPromise, earlyReturnPromise]);
 
-    // Keep the on-chain extrinsic hash (submittedTxId) as primary! Only fallback if empty.
-    let txId = submittedTxId || "";
-    if (!txId && txResult && !("early" in txResult)) {
-      const rawTx = txResult as Record<string, unknown>;
-      const publicData = (rawTx?.public as Record<string, unknown>) || rawTx;
-      if (typeof publicData?.txHash === "string") {
-        txId = publicData.txHash.replace(/^0x/, "");
-      } else if (typeof publicData?.txId === "string") {
-        txId = publicData.txId.replace(/^0x/, "");
-      } else if (Array.isArray(publicData?.identifiers) && publicData.identifiers.length > 0) {
-        txId = String(publicData.identifiers[0]).replace(/^0x/, "");
+    // Query the Midnight indexer for the real on-chain transaction hash that 1AM Explorer indexes
+    let txId = "";
+    for (let attempt = 0; attempt < 10; attempt++) {
+      try {
+        const indexerResp = await fetch(indexerHttp, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `query { contractAction(address: "${CONTRACT_ADDRESS}") { transaction { hash } } }`,
+          }),
+        });
+        const indexerData = await indexerResp.json() as {
+          data?: { contractAction?: { transaction?: { hash?: string } } };
+        };
+        const h = indexerData?.data?.contractAction?.transaction?.hash;
+        if (h && typeof h === "string") {
+          txId = h.replace(/^0x/, "");
+          console.log("Confirmed on-chain transaction hash from indexer:", txId);
+          break;
+        }
+      } catch (err) {
+        console.warn("Could not query transaction hash from indexer:", err);
       }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+
+    if (!txId) {
+      txId = submittedTxId || "";
     }
 
     // Nullifier = hash of secret (mirrors circuit)
