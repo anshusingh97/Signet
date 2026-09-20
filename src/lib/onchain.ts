@@ -214,7 +214,7 @@ export async function callPresentCredentialOnChain(
         const balanceResp = await fetch(`${ONEAM_PROOF_SERVER}/balance-only`, {
           method: "POST",
           headers: { "Content-Type": "application/octet-stream" },
-          body: txBytes,
+          body: new Blob([txBytes]),
         });
         if (balanceResp.ok) {
           const { txBytes: balancedHex } = await balanceResp.json() as { txBytes: string };
