@@ -66,8 +66,8 @@ export function CredentialCard({
       onVerified(result.nullifier);
     } else {
       let friendlyError = result.error;
-      if (result.error.includes("104")) {
-        friendlyError = "Transaction rejected (error 104 — Insufficient Shielded Funds): ZK transactions require shielded NIGHT tokens. Your wallet shows 0 shielded holdings. Please open 1AM wallet → Shield some of your NIGHT tokens → wait ~2 minutes for confirmation → then issue a fresh credential and try again.";
+      if (result.error.includes("182")) {
+        friendlyError = "ZK proof rejected (error 182 — no shielded NIGHT): Midnight ZK transactions require shielded tokens as inputs. Your Shielded Holdings are 0. In 1AM wallet: click SEND → paste your own shielded address (mn_shield-addr_preprod1…) as destination → send 500 NIGHT → wait ~3 min for confirmation. Then come back and issue a fresh credential.";
       } else if (result.error.includes("temporarily banned")) {
         friendlyError = "Your wallet is temporarily rate-limited. Please wait ~60 seconds and then issue a fresh credential and try again.";
       }
