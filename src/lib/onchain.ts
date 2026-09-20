@@ -207,18 +207,36 @@ export async function callPresentCredentialOnChain(
         return shieldedEncPk;
       },
       balanceTx: async (tx: { serialize: () => Uint8Array }, _ttl?: Date) => {
-        // Use 1AM ProofStation's /balance-only endpoint to balance the proven transaction.
-        // This uses ProofStation's own DUST wallet for fee sponsorship, so the user's
-        // shielded NIGHT balance (which may be 0) is NOT required → fixes error 182.
+        const serializedTx = toHex(tx.serialize());
+
+        // 1. Try wallet's native balanceUnsealedTransaction first (now that user has DUST)
+        if (typeof ap?.balanceUnsealedTransaction === "function") {
+          try {
+            console.log("Balancing transaction via 1AM wallet balanceUnsealedTransaction...");
+            const received = await (ap.balanceUnsealedTransaction as (s: string) => Promise<{ tx: string }>)(serializedTx);
+            console.log("Wallet balanced transaction successfully!");
+            return Transaction.deserialize(
+              "signature",
+              "proof",
+              "binding",
+              fromHex(received.tx)
+            );
+          } catch (walletBalErr) {
+            console.warn("Wallet balanceUnsealedTransaction failed, falling back to ProofStation /balance-only:", walletBalErr);
+          }
+        }
+
+        // 2. Fallback: Use 1AM ProofStation's /balance-only endpoint for fee sponsorship
+        console.log("Balancing transaction via ProofStation /balance-only...");
         const txBytes = tx.serialize();
         const balanceResp = await fetch(`${ONEAM_PROOF_SERVER}/balance-only`, {
           method: "POST",
           headers: { "Content-Type": "application/octet-stream" },
-          // Type assertion needed: TS5 generic Uint8Array<ArrayBufferLike> doesn't satisfy BodyInit directly
           body: txBytes as unknown as BodyInit,
         });
         if (balanceResp.ok) {
           const { txBytes: balancedHex } = await balanceResp.json() as { txBytes: string };
+          console.log("ProofStation /balance-only succeeded!");
           return Transaction.deserialize(
             "signature",
             "proof",
@@ -226,28 +244,19 @@ export async function callPresentCredentialOnChain(
             fromHex(balancedHex),
           );
         }
-        // Fallback: try wallet's own balance methods if ProofStation balance fails.
+
         const errBody = await balanceResp.json().catch(() => ({})) as { error?: string };
-        console.warn(`/balance-only failed (${balanceResp.status}): ${errBody.error ?? balanceResp.statusText}. Falling back to wallet balancing.`);
-        if (typeof ap?.balanceUnsealedTransaction === "function") {
-          const serializedTx = toHex(tx.serialize());
-          const received = await (ap.balanceUnsealedTransaction as (s: string) => Promise<{ tx: string }>)(serializedTx);
-          return Transaction.deserialize(
-            "signature",
-            "proof",
-            "binding",
-            fromHex(received.tx)
-          );
-        }
+        const errMsg = `/balance-only failed (${balanceResp.status}): ${errBody.error ?? balanceResp.statusText}`;
+        console.error(errMsg);
+
+        // 3. Additional fallback methods
         if (typeof ap?.balanceTx === "function") {
           return (ap.balanceTx as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, _ttl);
         }
         if (typeof ap?.balanceTransaction === "function") {
           return (ap.balanceTransaction as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, _ttl);
         }
-        throw new Error(
-          "Could not balance transaction: ProofStation /balance-only failed and wallet has no balance method."
-        );
+        throw new Error(`Could not balance transaction: ${errMsg}`);
       },
     };
 
@@ -256,17 +265,30 @@ export async function callPresentCredentialOnChain(
     const midnightProvider = {
       submitTx: async (tx: { serialize: () => Uint8Array; identifiers: () => string[] }) => {
         const txHex = toHex(tx.serialize());
+        console.log("Submitting transaction to wallet, length:", txHex.length);
         if (typeof ap?.submitTransaction === "function") {
-          const res = await (ap.submitTransaction as (s: string) => Promise<unknown>)(txHex);
-          const txIdentifiers = tx.identifiers();
-          const returnedId = typeof res === "string" ? res : (res as { txId?: string; hash?: string })?.txId || (res as { txId?: string; hash?: string })?.hash;
-          submittedTxId = returnedId || txIdentifiers[0];
-          return submittedTxId;
+          try {
+            const res = await (ap.submitTransaction as (s: string) => Promise<unknown>)(txHex);
+            console.log("1AM submitTransaction response:", res);
+            const txIdentifiers = tx.identifiers();
+            const returnedId = typeof res === "string" ? res : (res as { txId?: string; hash?: string })?.txId || (res as { txId?: string; hash?: string })?.hash;
+            submittedTxId = returnedId || txIdentifiers[0];
+            return submittedTxId;
+          } catch (submitErr) {
+            console.error("1AM submitTransaction failed with:", submitErr);
+            throw submitErr;
+          }
         }
         if (typeof ap?.submitTx === "function") {
-          const res = await (ap.submitTx as (t: unknown) => Promise<string>)(tx);
-          submittedTxId = res;
-          return res;
+          try {
+            const res = await (ap.submitTx as (t: unknown) => Promise<string>)(tx);
+            console.log("1AM submitTx response:", res);
+            submittedTxId = res;
+            return res;
+          } catch (submitErr) {
+            console.error("1AM submitTx failed with:", submitErr);
+            throw submitErr;
+          }
         }
         throw new Error("Connected wallet does not support submitting transactions.");
       },
@@ -335,9 +357,9 @@ export async function callPresentCredentialOnChain(
 
     return { ok: true, txId, nullifier };
   } catch (e: unknown) {
+    console.error("callPresentCredentialOnChain uncaught error:", e);
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, error: msg };
-
   }
 }
 
