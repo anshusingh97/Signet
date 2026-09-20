@@ -206,7 +206,28 @@ export async function callPresentCredentialOnChain(
       getEncryptionPublicKey(): string {
         return shieldedEncPk;
       },
-      balanceTx: async (tx: { serialize: () => Uint8Array }, ttl?: Date) => {
+      balanceTx: async (tx: { serialize: () => Uint8Array }, _ttl?: Date) => {
+        // Use 1AM ProofStation's /balance-only endpoint to balance the proven transaction.
+        // This uses ProofStation's own DUST wallet for fee sponsorship, so the user's
+        // shielded NIGHT balance (which may be 0) is NOT required → fixes error 182.
+        const txBytes = tx.serialize();
+        const balanceResp = await fetch(`${ONEAM_PROOF_SERVER}/balance-only`, {
+          method: "POST",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: txBytes,
+        });
+        if (balanceResp.ok) {
+          const { txBytes: balancedHex } = await balanceResp.json() as { txBytes: string };
+          return Transaction.deserialize(
+            "signature",
+            "proof",
+            "binding",
+            fromHex(balancedHex),
+          );
+        }
+        // Fallback: try wallet's own balance methods if ProofStation balance fails.
+        const errBody = await balanceResp.json().catch(() => ({})) as { error?: string };
+        console.warn(`/balance-only failed (${balanceResp.status}): ${errBody.error ?? balanceResp.statusText}. Falling back to wallet balancing.`);
         if (typeof ap?.balanceUnsealedTransaction === "function") {
           const serializedTx = toHex(tx.serialize());
           const received = await (ap.balanceUnsealedTransaction as (s: string) => Promise<{ tx: string }>)(serializedTx);
@@ -218,13 +239,13 @@ export async function callPresentCredentialOnChain(
           );
         }
         if (typeof ap?.balanceTx === "function") {
-          return (ap.balanceTx as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, ttl);
+          return (ap.balanceTx as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, _ttl);
         }
         if (typeof ap?.balanceTransaction === "function") {
-          return (ap.balanceTransaction as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, ttl);
+          return (ap.balanceTransaction as (t: unknown, ttl?: Date) => Promise<unknown>)(tx, _ttl);
         }
         throw new Error(
-          "Connected wallet does not support balancing transactions. Please ensure your wallet is on Preprod."
+          "Could not balance transaction: ProofStation /balance-only failed and wallet has no balance method."
         );
       },
     };
