@@ -1,82 +1,74 @@
 # Signet
-![CI](https://github.com/anshusingh97/Signet/actions/workflows/ci.yml/badge.svg)
-> Prove a credential is valid — and meets a threshold — without disclosing it.
+[![CI](https://github.com/anshusingh97/Signet/actions/workflows/ci.yml/badge.svg)](https://github.com/anshusingh97/Signet/actions/workflows/ci.yml)
+> Prove a credential is valid — and meets a threshold — without disclosing it. Built on Midnight.
 
 ## Live Demo
-[LIVE URL — add after deploying, e.g. Vercel/Netlify]
+https://signet-one-blush.vercel.app
 
 ## Contract Address
-| Network  | Address                                                            |
-|----------|--------------------------------------------------------------------|
+| Network  | Address                          |
+|----------|----------------------------------|
 | Preprod  | `d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c` |
-| Network  | Midnight Preprod (`preprod`) |
 
 🔍 [View on Midnight Explorer](https://preprod.midnight.network/contract/d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c)
 
 ## What This Does
-Signet lets an issuer open a "gate" in front of some resource — a
-private channel, a grant round, a voting pool — that requires a
-credential at or above a given tier. Holders prove, in zero-knowledge,
-that they hold a genuine credential from the trusted issuer meeting
-that bar, without ever revealing the credential itself or exactly how
-high their tier is above the minimum.
+Signet lets an organization or issuer open a "gate" in front of a restricted resource—such as a developer channel, a grant distribution pool, an exclusive voting round, or an accredited community.
 
-Pick a tier to simulate holding a credential, then present it at the
-gate. The app walks through proof generation and shows the private
-receipt that's the only trace your presentation leaves behind.
+The gate requires a credential at or above a specified tier. Using zero-knowledge proofs on Midnight, credential holders prove that they possess a genuine credential meeting the qualification tier without ever disclosing:
+- The credential secret or private seed
+- Their exact tier score above the required threshold
+- Their real-world identity or wallet linkability
+
+The application generates a client-side zero-knowledge proof, pays network fees using Midnight DUST, balances the transaction with 1AM Wallet, and submits the proof on-chain to the Preprod network, leaving only a cryptographic nullifier and an incremented verification counter.
 
 ## Privacy Model
-- **PUBLIC:** the gated resource's name, the minimum tier required, the
-  running count of successful verifications, the set of spent
-  credential nullifiers.
-- **PRIVATE:** the credential secret, the holder's exact tier, and any
-  link between a nullifier and the holder's identity.
-- **PROVED without revealing:** that the caller holds a credential
-  issued by the trusted issuer, at or above the gate's required tier,
-  and has not presented it to this gate before — without revealing
-  which credential it is, or its exact tier.
+- PUBLIC:
+  - The gated resource name (e.g., "Verified Builders Channel")
+  - The minimum required tier threshold (e.g., Tier 3)
+  - The total verified presentation count recorded on the contract
+  - The set of spent nullifier hashes (used to strictly prevent double-presentation)
+- PRIVATE:
+  - The credential secret key and witness data
+  - The holder's exact tier score (concealed whether it is Tier 3, 4, or 5)
+  - The link between the holder's wallet/identity and the spent nullifier
+- PROVED without revealing:
+  - Proved that the caller holds a valid credential whose tier is greater than or equal to the gate's required threshold, and that this credential has not been previously spent at this gate—without revealing the credential secret or the exact tier value.
 
 ## Privacy Claim
-An on-chain observer can see the exact number of credentials that have
-cleared the gate at any moment, and can confirm no single credential
-was used twice at that gate (the nullifier set only ever grows). What
-they cannot see, at any point, is whose credential it was, its precise
-tier — only that it met the threshold — or which nullifier ties back to
-which holder. That link is never written to the ledger in the first
-place.
+An on-chain observer or verifier can see the total number of credentials that have cleared the gate at any time, and can verify that no credential has been submitted twice (since the nullifier set only grows monotonically). What an observer cannot see or infer at any point:
+1. Whose credential was used (no wallet or identity link exists in the proof or ledger state).
+2. The exact tier or score of the holder (the proof only establishes the inequality `tier >= requiredTier`).
+3. Which nullifier belongs to which holder or off-chain credential.
 
 ## Tech Stack
-- **Contract:** Compact (`contracts/credential.compact`) — Midnight's ZK
-  smart contract language
-- **Frontend:** React + TypeScript + Vite + Tailwind CSS
-- **Wallet:** 1AM Wallet or Lace (Midnight Preprod connector)
-- **Tests:** Vitest, mirroring the circuit's logic in TypeScript
-- **CI/CD:** GitHub Actions
+- **ZK Smart Contract:** Compact (`contracts/credential.compact`) compiled with Midnight Compact compiler
+- **Network:** Midnight Preprod
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+- **Wallet Connection:** 1AM Wallet (with DUST registration and native transaction balancing)
+- **Testing:** Vitest (comprehensive unit, state transition, circuit logic, and privacy test suites)
+- **CI/CD:** GitHub Actions (`.github/workflows/ci.yml`)
 
 ## Prerequisites
 - Node.js v22+
-- npm
-- [Midnight `compact` CLI](https://docs.midnight.network) (for compiling
-  the contract and deploying to Preprod)
-- [1AM Wallet](https://1am.xyz) or [Lace wallet](https://docs.midnight.network) browser extension, funded
-  on Preprod, for live on-chain interaction
+- npm v10+
+- [1AM Wallet](https://1am.xyz) browser extension (configured for Midnight Preprod network, with registered DUST)
 
 ## Setup & Run Locally
 ```bash
-# 1. Install dependencies
+# 1. Clone the repository
+git clone https://github.com/anshusingh97/Signet.git
+cd Signet
+
+# 2. Install dependencies
 npm install
 
-# 2. (Once the Midnight toolchain is installed) compile the contract
-npm run compact:compile
-
-# 3. Run the app
+# 3. Run the development server
 npm run dev
+
+# 4. Build for production
+npm run build
 ```
-The app runs fully interactively against a local TypeScript simulator
-(`src/lib/credentialSimulator.ts`) that mirrors the compiled circuit's
-rules, so the UI can be reviewed before the contract is deployed to
-Preprod. Once deployed, swap the simulator calls in `src/App.tsx` for
-the generated Midnight.js contract bindings in `managed/credential`.
 
 ## Run Tests
 ```
@@ -84,11 +76,19 @@ npm test
 ```
 
 ## CI/CD
-On every push and pull request to `main`, the GitHub Actions pipeline
-(`.github/workflows/ci.yml`) checks out the code, installs dependencies
-on Node 22, compiles the Compact contract when the toolchain is present,
-lints, runs the full Vitest suite, and produces a production build —
-failing the run if any step errors.
+The repository uses GitHub Actions (`.github/workflows/ci.yml`) configured to automatically trigger on every `push` and `pull_request` to the `main` branch.
+
+The pipeline performs the following steps:
+1. Checks out the code repository.
+2. Installs Node.js v22 with npm cache.
+3. Installs and configures the Midnight Compact compiler toolchain.
+4. Compiles the Compact contract and builds generated TypeScript contract bindings.
+5. Installs frontend dependencies.
+6. Runs code linting (`npm run lint`).
+7. Executes the automated test suite (`npm test` — covering circuit logic, state transitions, and privacy verification).
+8. Builds the production bundle (`npm run build`).
+
+A status badge is located at the top of this README showing live workflow status.
 
 ## Product Proposal
-See [PROPOSAL.md](./PROPOSAL.md).
+See [PROPOSAL.md](./PROPOSAL.md) for the complete product specification, target user personas, Midnight architectural rationale, data model, and roadmap to Mainnet.

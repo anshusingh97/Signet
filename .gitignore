@@ -6,3 +6,5 @@ managed/*
 .env.local
 *.log
 .DS_Store
+*.timestamp-*.mjs
+*.tsbuildinfo
