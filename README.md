@@ -5,12 +5,18 @@
 ## Live Demo
 https://signet-one-blush.vercel.app
 
+## Demo Video
+🎥 [Watch the 1-Minute Walkthrough Video (Google Drive)](https://drive.google.com/file/d/1Q-uuKpG_QyRkoZlabIHLKox3Qf7UoJ2I/view?usp=sharing)
+
 ## Contract Address
 | Network  | Address                          |
 |----------|----------------------------------|
 | Preprod  | `d6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c` |
 
-🔍 [View on Midnight Explorer](https://preprod.midnightexplorer.com/contracts/0xd6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c)
+- 🔍 **Contract on Midnight Explorer:** [View Preprod Contract](https://preprod.midnightexplorer.com/contracts/0xd6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c)
+- ⚡ **Confirmed On-Chain Transaction:** [View Extrinsic on 1AM Explorer](https://explorer.1am.xyz/tx/5729da30b3babd5b0097a743ca4b97c0ffff1bcb3e99c745862a864b93729a22?network=preprod)
+
+![Preprod Contract Explorer](./screenshots/contract-link.png)
 
 ## What This Does
 Signet lets an organization or issuer open a "gate" in front of a restricted resource—such as a developer channel, a grant distribution pool, an exclusive voting round, or an accredited community.
@@ -21,6 +27,8 @@ The gate requires a credential at or above a specified tier. Using zero-knowledg
 - Their real-world identity or wallet linkability
 
 The application generates a client-side zero-knowledge proof, pays network fees using Midnight DUST, balances the transaction with 1AM Wallet, and submits the proof on-chain to the Preprod network, leaving only a cryptographic nullifier and an incremented verification counter.
+
+![Interactive Product UI](./screenshots/product-ui.png)
 
 ## Privacy Model
 - PUBLIC:
@@ -75,6 +83,8 @@ npm run build
 npm test
 ```
 
+![Test Suite Output](./screenshots/test-output.png)
+
 ## CI/CD
 The repository uses GitHub Actions (`.github/workflows/ci.yml`) configured to automatically trigger on every `push` and `pull_request` to the `main` branch.
 
@@ -89,6 +99,15 @@ The pipeline performs the following steps:
 8. Builds the production bundle (`npm run build`).
 
 A status badge is located at the top of this README showing live workflow status.
+
+## Screenshots & Verification
+
+| Screenshot | Description |
+| :--- | :--- |
+| **Product UI**<br>![Product UI](./screenshots/product-ui.png) | Interactive dApp interface with live 1AM Wallet integration, credential selection, ZK proof generation, and verification status. |
+| **On-Chain Transaction**<br>![Transaction](./screenshots/transaction-link.png) | Confirmed transaction on Midnight Preprod Explorer with cryptographic proof verification and ledger state update.<br>🔗 [View on 1AM Explorer](https://explorer.1am.xyz/tx/5729da30b3babd5b0097a743ca4b97c0ffff1bcb3e99c745862a864b93729a22?network=preprod) |
+| **Contract Explorer**<br>![Contract Explorer](./screenshots/contract-link.png) | Midnight Explorer contract page for `0xd6258de4cb...` showing contract state, actions, and verification history.<br>🔗 [View on Midnight Explorer](https://preprod.midnightexplorer.com/contracts/0xd6258de4cb23f7ff1903f4903d0a8d682f108cd9da99a7e592739296ba80dc8c) |
+| **Test Output (8 Passing)**<br>![Tests Output](./screenshots/test-output.png) | Vitest test execution output showing 8 passing tests across `tests/counter.test.ts` and `tests/credential.test.ts`. |
 
 ## Product Proposal
 See [PROPOSAL.md](./PROPOSAL.md) for the complete product specification, target user personas, Midnight architectural rationale, data model, and roadmap to Mainnet.
